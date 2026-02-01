@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js build
+.next/
+out/
+build/
+dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Turbo
+.turbo/
+
+# Backup files
+*.bak
+*.bak-*
+*.backup
+*.backup-*
+*.old
+*.tmp
+*.temp
+
+# Vercel
+.vercel/
+
+# Debug
+.debug/

@@ -1,0 +1,8 @@
+# Rosen Experts - Staging Environment
+# This is the staging site - do not index
+
+User-agent: *
+Disallow: /
+
+# Block all crawlers on staging
+# Production robots.txt will be different

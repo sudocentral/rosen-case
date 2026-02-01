@@ -1,0 +1,79 @@
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import "./globals.css";
+import Analytics from "@/components/Analytics";
+import AccessibilityPanel from "@/components/AccessibilityPanel";
+import ChatWidget from "@/components/ChatWidget";
+import { LanguageProvider } from "@/i18n";
+import JsonLd from "@/components/JsonLd";
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://case.rosenexperts.com"),
+  title: "Free Medical Records Review | Same-Day Determination | Rosen Experts",
+  description: "Get your medical records reviewed free by licensed physicians. Same-day determination for VA disability, SSDI, insurance denials, and more. No obligation.",
+  keywords: ["medical records review", "VA disability", "nexus letter", "physician opinion letter", "SSDI", "disability benefits"],
+  authors: [{ name: "Rosen Experts" }],
+  openGraph: {
+    title: "Free Medical Records Review | Rosen Experts",
+    description: "Get your medical records reviewed free by licensed physicians. Same-day determination for VA disability, SSDI, and more.",
+    url: "https://case.rosenexperts.com",
+    siteName: "Rosen Experts",
+    images: [
+      {
+        url: "/brand/logo.png",
+        width: 250,
+        height: 50,
+        alt: "Rosen Experts",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Free Medical Records Review | Rosen Experts",
+    description: "Get your medical records reviewed free by licensed physicians. Same-day determination.",
+    images: ["/brand/logo.png"],
+  },
+  icons: {
+    icon: "/brand/favicon.png",
+    shortcut: "/brand/favicon.png",
+    apple: "/brand/apple-touch-icon.png",
+  },
+  manifest: "/manifest.json",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <meta name="theme-color" content="#1a5f7a" />
+        <JsonLd />
+      </head>
+      <body className="antialiased">
+        <LanguageProvider>
+          {/* Skip Link for Accessibility */}
+          <a href="#main-content" className="skip-link">
+            Skip to main content
+          </a>
+          {children}
+          {/* Accessibility Controls Panel */}
+          <AccessibilityPanel />
+          {/* FAQ Chat Widget */}
+          <ChatWidget />
+        </LanguageProvider>
+        {/* Analytics - GA4, Meta Pixel, Reddit Pixel */}
+        <Suspense fallback={null}>
+          <Analytics />
+        </Suspense>
+      </body>
+    </html>
+  );
+}
