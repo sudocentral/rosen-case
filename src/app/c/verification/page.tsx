@@ -283,19 +283,11 @@ export default function CardAuthorizationPage() {
     const token = localStorage.getItem("rosen_client_token");
     if (token) {
       clearIntakeDraft(token);
-
-      // Submit the records for review
-      fetch("https://api.sudomanaged.com/api/rosen/public/client/upload/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-intake-token": token,
-        },
-      }).then(() => {
-        // 5 seconds to read the success message
-        setTimeout(() => router.push("/c/status"), 5000);
-      });
     }
+
+    // Sherlock already triggered at statement submission (silent, in background)
+    // Just redirect to status after showing success message
+    setTimeout(() => router.push("/c/status"), 5000);
   }, [router]);
 
   if (loading) {

@@ -259,6 +259,18 @@ export default function StatementPage() {
         saveDraft(token, statement.trim());
       }
 
+      // Trigger Sherlock processing in background (fire-and-forget, silent)
+      // This ensures records are processed even if user abandons at card step
+      fetch(`${API_URL}/upload/submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-intake-token": token!,
+        },
+      }).catch(() => {
+        // Silent fail - don't block user flow
+      });
+
       // Continue to card authorization
       window.location.href = "/c/verification";
     } catch (err) {
