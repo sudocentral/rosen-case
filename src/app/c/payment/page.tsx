@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * Payment Repair Page - F6-B
- * Only visible when auto-charge failed (collect_letter_fee status).
+ * Payment Page - F6-B
+ * Handles both normal payment collection and payment repair flows
+ * when case is in collect_letter_fee status.
  * Uses Stripe Checkout with Klarna/Afterpay options.
  */
 
@@ -43,6 +44,7 @@ function PaymentContent() {
   const [invoiceAmount, setInvoiceAmount] = useState<number>(100000);
   const [error, setError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [autoChargeStatus, setAutoChargeStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("rosen_client_token");
@@ -67,6 +69,7 @@ function PaymentContent() {
             setCaseId(statusData.data.case_id);
             setCaseStatus(statusData.data.status);
             setInvoiceAmount(statusData.data.invoice_amount_cents || 100000);
+            setAutoChargeStatus(statusData.data.auto_charge_status || null);
 
             // Only allow payment if collect_letter_fee status
             if (statusData.data.status !== "collect_letter_fee") {
@@ -195,16 +198,34 @@ function PaymentContent() {
             </div>
           )}
 
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              Payment Method Needs Attention
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Complete Payment to Begin Physician Review</h1>
-            <p className="text-lg text-gray-600">Your case qualifies. We need a valid payment method to begin work.</p>
-          </div>
+          {(() => {
+            const isCardFailure = autoChargeStatus?.startsWith("failed_") || autoChargeStatus === "no_payment_method";
+            return (
+              <div className="text-center mb-10">
+                {isCardFailure ? (
+                  <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    Payment Method Needs Attention
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Your Case Qualifies
+                  </div>
+                )}
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Complete Payment to Begin Physician Review</h1>
+                <p className="text-lg text-gray-600">
+                  {isCardFailure
+                    ? "Your case qualifies. We need a valid payment method to begin work."
+                    : "Complete your one-time payment and a licensed physician will begin preparing your letter."}
+                </p>
+              </div>
+            );
+          })()}
 
           <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden mb-8">
             <div className="p-8 text-center border-b border-gray-100">
@@ -275,7 +296,9 @@ function PaymentContent() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    Fix Payment Method
+                    {autoChargeStatus?.startsWith("failed_") || autoChargeStatus === "no_payment_method"
+                      ? "Fix Payment Method"
+                      : "Proceed to Secure Payment"}
                   </>
                 )}
               </button>

@@ -1167,11 +1167,18 @@ export default function ClientStatusPage() {
     }
 
     if (status === "collect_letter_fee") {
+      const isCardFailure = caseStatus.auto_charge_status?.startsWith("failed_") ||
+                             caseStatus.auto_charge_status === "no_payment_method";
       return {
         type: "action",
-        title: "Payment Method Update Required",
-        message: "Your case qualified, but we need to update your payment method to proceed.",
-        action: { label: "Update Payment", href: `/c/payment?case=${caseStatus.case_id}` },
+        title: isCardFailure ? "Payment Method Update Required" : "Payment Required",
+        message: isCardFailure
+          ? "Your case qualified, but we need to update your payment method to proceed."
+          : "Your case qualified! Complete payment to begin your physician review.",
+        action: {
+          label: isCardFailure ? "Update Payment" : "Complete Payment",
+          href: `/c/payment?case=${caseStatus.case_id}`,
+        },
       };
     }
 
