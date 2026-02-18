@@ -595,7 +595,7 @@ export default function UploadPage() {
     }
   };
 
-  // Submit Sentinel passwords: decrypt each file via Flow A, then re-postprocess
+  // Submit Sentinel passwords by re-calling /upload/postprocess with passwords
   const submitSentinelPasswords = async () => {
     if (!token) return;
 
@@ -609,108 +609,87 @@ export default function UploadPage() {
     setSecuringFiles(true);
     setSentinelError("");
 
-    // Helpers for fuzzy filename matching
-    const normalizeName = (name: string) =>
-      name.toLowerCase().replace(/\s+/g, " ").replace(/[_-]+/g, "_").replace(/_+/g, "_").trim();
-
-    const stripTimestampPrefix = (name: string) =>
-      name.replace(/^\d{10,13}_/, "");
-
-    const resolveFileId = (sentinelName: string, files: typeof existingFiles) => {
-      // 1) Exact match
-      const exact = files.find(f => f.filename === sentinelName);
-      if (exact) return exact;
-
-      // 2) Normalized match
-      const sNorm = normalizeName(sentinelName);
-      const normalized = files.find(f => normalizeName(f.filename) === sNorm);
-      if (normalized) return normalized;
-
-      // 3) Timestamp-stripped match (exact then normalized)
-      const sStripped = stripTimestampPrefix(sentinelName);
-      const strippedExact = files.find(f => stripTimestampPrefix(f.filename) === sStripped);
-      if (strippedExact) return strippedExact;
-
-      const sStrippedNorm = normalizeName(sStripped);
-      const strippedNorm = files.find(f => normalizeName(stripTimestampPrefix(f.filename)) === sStrippedNorm);
-      if (strippedNorm) return strippedNorm;
-
-      // 4) Suffix match (last resort, must be unique)
-      if (sStripped.length > 4) {
-        const suffixMatches = files.filter(f => f.filename.endsWith(sStripped));
-        if (suffixMatches.length === 1) return suffixMatches[0];
-        if (suffixMatches.length > 1) {
-          throw new Error(`Ambiguous match for ${sentinelName}, found ${suffixMatches.length} candidates`);
-        }
-      }
-
-      return null;
-    };
-
-    const failedFiles: string[] = [];
-
     try {
-      // Refresh file list so we match against freshest filenames
-      const freshFiles = await loadExistingFiles(token);
+      // Re-call postprocess with passwords - backend handles retry with passwords
+      const response = await fetch(`${API_URL}/upload/postprocess`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-intake-token": token,
+        },
+        body: JSON.stringify({ passwords: sentinelPasswords }),
+      });
 
-      // Step A: Call /file/:id/submit-password for each file to persist decryption
-      for (const spf of sentinelPasswordFiles) {
-        const password = sentinelPasswords[spf.filename]?.trim();
-        if (!password) continue;
+      const text = await response.text();
+      console.log("[postprocess with passwords] response:", text);
 
-        const match = resolveFileId(spf.filename, freshFiles);
-
-        if (!match) {
-          console.error(`[batch-password] No match for: ${spf.filename}`);
-          failedFiles.push(spf.filename);
-          continue;
-        }
-
-        console.log(`[batch-password] Decrypting ${spf.filename} (id=${match.id})`);
-
-        try {
-          const response = await fetch(`${API_URL}/file/${match.id}/submit-password`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-intake-token": token,
-            },
-            body: JSON.stringify({ password }),
-          });
-
-          const data = await response.json();
-
-          if (!data.success || !data.data?.decrypted) {
-            console.error(`[batch-password] Decrypt failed for ${spf.filename}: ${data.error || "unknown"}`);
-            failedFiles.push(spf.filename);
-            continue;
-          }
-
-          console.log(`[batch-password] Decrypted ${spf.filename}`);
-        } catch (fetchErr) {
-          console.error(`[batch-password] Request failed for ${spf.filename}:`, fetchErr);
-          failedFiles.push(spf.filename);
-          continue;
-        }
+      let data: { ok?: boolean; job_id?: string | null; status?: string; files?: string[]; code?: string; blocked_files?: string[]; error?: string } | null = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        throw new Error(`Invalid response from server: ${text.substring(0, 100)}`);
       }
 
-      // If any failed, keep modal open with error
-      if (failedFiles.length > 0) {
-        setSentinelError(`Could not decrypt: ${failedFiles.join(", ")}. Please check passwords and try again.`);
+      if (!data || !data.status) {
+        throw new Error("Server did not return file validation status");
+      }
+
+      console.log("[postprocess with passwords] status:", data.status);
+
+      // Handle PROCESSING = success (passwords worked)
+      if (data.status === "PROCESSING") {
+        setSecureComplete(true);
+        setSentinelPasswordFiles([]);
+        setSentinelPasswords({});
+        setSecuringFiles(false);
+        await loadExistingFiles(token);
+        // Fetch Sentinel metadata for decision gate
+        await fetchSentinelMetadata();
+        return;
+      }
+
+      // Handle NEEDS_PASSWORD = still encrypted (wrong password?)
+      if (data.status === "NEEDS_PASSWORD") {
+        const rawFiles = (data.files || []).map(f => typeof f === "string" ? f : f);
+        const uniqueNames = [...new Set(rawFiles)];
+        const files = uniqueNames.map(f => ({ filename: f }));
+        setSentinelPasswordFiles(files);
+        setSentinelError("Incorrect password. Please try again.");
         setSecuringFiles(false);
         return;
       }
 
-      // Step B: Refresh file list and re-run postprocess (no passwords needed now)
-      await loadExistingFiles(token);
+      // Handle FAIL = hard stop
+      if (data.status === "FAIL") {
+        setSentinelError("Files couldn't be processed. Please remove and try again.");
+        setSentinelPasswordFiles([]);
+        setSentinelPasswords({});
+        setSecuringFiles(false);
+        await loadExistingFiles(token);
+        return;
+      }
 
-      setSentinelPasswordFiles([]);
-      setSentinelPasswords({});
+      // C-1: Handle DOC_PASSWORD_REQUIRED = can't be decrypted even with password
+      // Check both status and code fields (backend may return either)
+      if (data.status === "DOC_PASSWORD_REQUIRED" || data.code === "DOC_PASSWORD_REQUIRED") {
+        const fileNames = (data.files || data.blocked_files || []).join(", ");
+        setSentinelError(
+          fileNames
+            ? `The following file(s) are password-protected and can't be processed: ${fileNames}. Please remove the password protection and re-upload, or contact support.`
+            : "This file is password-protected and can't be processed yet. Remove the password and re-upload, or contact support."
+        );
+        setSentinelPasswordFiles([]);
+        setSentinelPasswords({});
+        setSecuringFiles(false);
+        await loadExistingFiles(token);
+        return;
+      }
 
-      await runSentinelPostprocess();
+      // Unknown status
+      throw new Error("Unexpected response from file validation");
 
     } catch (err) {
-      console.error("Batch password error:", err);
+      console.error("Password submission error:", err);
       setSentinelError(err instanceof Error ? err.message : "Failed to unlock files. Please check passwords.");
       setSecuringFiles(false);
     }
