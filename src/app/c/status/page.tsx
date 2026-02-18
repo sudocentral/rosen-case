@@ -1590,7 +1590,7 @@ export default function ClientStatusPage() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Upload Your Medical Records</h1>
             <p className="text-gray-600 mb-8">To begin your free review, please upload your medical records and relevant documents.</p>
-            <a href="/c/upload" className="inline-flex items-center gap-2 bg-[#2c8a6e] text-white px-8 py-4 rounded-lg font-semibold hover:bg-[#1e6b55] transition-colors">
+            <a href="/c/upload?edit=1" className="inline-flex items-center gap-2 bg-[#2c8a6e] text-white px-8 py-4 rounded-lg font-semibold hover:bg-[#1e6b55] transition-colors">
               Upload Medical Records
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -1911,7 +1911,7 @@ export default function ClientStatusPage() {
                     )}
                   </div>
                   <a
-                    href="/c/upload"
+                    href="/c/upload?edit=1"
                     className="mt-4 w-full flex items-center justify-center gap-2 text-sm text-[#1a5f7a] hover:text-[#134a5f] font-medium py-2 border border-[#1a5f7a] rounded-lg hover:bg-blue-50 transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
