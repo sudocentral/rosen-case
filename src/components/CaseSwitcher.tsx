@@ -112,15 +112,40 @@ export default function CaseSwitcher({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  function switchCase(caseId: string) {
-    localStorage.setItem("caseflow_active_case_id", caseId);
-    setActiveCaseId(caseId);
+  async function switchCase(caseId: string) {
     setIsOpen(false);
-    if (onCaseChange) {
-      onCaseChange(caseId);
-    } else {
-      // Reload the page to refresh with new case context
+
+    const currentToken = localStorage.getItem("rosen_client_token");
+    if (!currentToken) {
+      alert("Unable to switch cases");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/${caseId}/switch`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-intake-token": currentToken,
+        },
+      });
+
+      if (!response.ok) {
+        alert("Unable to switch cases");
+        return;
+      }
+
+      const data = await response.json();
+      if (!data.success || !data.data?.token) {
+        alert("Unable to switch cases");
+        return;
+      }
+
+      localStorage.setItem("rosen_client_token", data.data.token);
+      localStorage.setItem("caseflow_active_case_id", caseId);
       window.location.reload();
+    } catch (err) {
+      alert("Unable to switch cases");
     }
   }
 
