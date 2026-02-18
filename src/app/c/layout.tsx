@@ -65,6 +65,7 @@ export default function IntakeLayout({ children }: IntakeLayoutProps) {
   const [isChecking, setIsChecking] = useState(true);
   const [guardError, setGuardError] = useState<string | null>(null);
   const [patientName, setPatientName] = useState<string | null>(null);
+  const [customerName, setCustomerName] = useState<string | null>(null);
   const [caseId, setCaseId] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState<string | null>(null);
   const [fileCount, setFileCount] = useState(0);
@@ -129,6 +130,7 @@ export default function IntakeLayout({ children }: IntakeLayoutProps) {
           const statusData = await statusResponse.json();
           if (statusData.success && statusData.data) {
             setPatientName(statusData.data.patient_name || null);
+            setCustomerName(statusData.data.customer_name || null);
             setCaseId(statusData.data.case_id || null);
           }
         }
@@ -255,7 +257,7 @@ export default function IntakeLayout({ children }: IntakeLayoutProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
             <span className="font-medium">
-              Patient: {patientName || "(loading...)"}
+              Patient: {patientName || customerName || "(not set)"}
             </span>
           </div>
         </div>
