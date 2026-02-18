@@ -150,14 +150,26 @@ export default function PatientConfirmationGate({
     savePatientIdentity(name, isoDate);
   }
 
-  function handleContinueToDoB() {
+  function handleSubmitDifferentPerson() {
     const fullName = `${patientFirstName.trim()} ${patientLastName.trim()}`.trim();
     if (fullName.length < 2) {
       setError("Please enter the patient's full name");
       return;
     }
-    setError("");
-    setStep("dob");
+    if (!dateOfBirth) {
+      setError("Please enter the date of birth");
+      return;
+    }
+    if (!isValidDate(dateOfBirth)) {
+      setError("Please enter a valid date (MM/DD/YYYY)");
+      return;
+    }
+    const isoDate = convertToIsoDate(dateOfBirth);
+    if (!isoDate) {
+      setError("Please enter a valid date (MM/DD/YYYY)");
+      return;
+    }
+    savePatientIdentity(fullName, isoDate);
   }
 
   // Step 3: Collect DOB (for both Yes and No flows)
@@ -224,7 +236,7 @@ export default function PatientConfirmationGate({
     );
   }
 
-  // Step 2b: Different person - collect name first
+  // Step 2b: Different person - collect name + DOB on same screen
   if (step === "different_person") {
     return (
       <div className="bg-white rounded-xl shadow-lg p-8 max-w-md mx-auto">
@@ -232,7 +244,7 @@ export default function PatientConfirmationGate({
           Whose medical records are these?
         </h2>
         <p className="text-gray-600 mb-6">
-          Please enter the name of the patient whose records you are uploading.
+          Please enter the name and date of birth of the patient whose records you are uploading.
         </p>
 
         <div className="space-y-4">
@@ -262,6 +274,21 @@ export default function PatientConfirmationGate({
               disabled={saving}
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Date of Birth <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={dateOfBirth}
+              onChange={(e) => handleDobChange(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent"
+              placeholder="MM/DD/YYYY"
+              disabled={saving}
+              maxLength={10}
+              autoComplete="bday"
+            />
+          </div>
 
           {error && (
             <p className="text-red-600 text-sm">{error}</p>
@@ -279,11 +306,11 @@ export default function PatientConfirmationGate({
               Back
             </button>
             <button
-              onClick={handleContinueToDoB}
+              onClick={handleSubmitDifferentPerson}
               className="flex-1 px-4 py-3 bg-[#1a5f7a] text-white rounded-lg hover:bg-[#164e66] disabled:opacity-50"
-              disabled={saving || !patientFirstName.trim() || !patientLastName.trim()}
+              disabled={saving || !patientFirstName.trim() || !patientLastName.trim() || dateOfBirth.length < 10}
             >
-              Continue
+              {saving ? "Saving..." : "Continue"}
             </button>
           </div>
         </div>
