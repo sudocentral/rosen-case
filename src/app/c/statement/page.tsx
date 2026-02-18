@@ -202,6 +202,8 @@ export default function StatementPage() {
     fetchApiData();
   }, [router]);
 
+  const isEditMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("edit") === "1";
+
   const handleStatementChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     if (value.length <= MAX_STATEMENT_LENGTH) {
@@ -271,8 +273,8 @@ export default function StatementPage() {
         // Silent fail - don't block user flow
       });
 
-      // Continue to card authorization
-      window.location.href = "/c/verification";
+      // Continue to card authorization (or back to status in edit mode)
+      window.location.href = isEditMode ? "/c/status" : "/c/verification";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
@@ -412,7 +414,7 @@ export default function StatementPage() {
                   </>
                 ) : (
                   <>
-                    Continue to Verification
+                    {isEditMode ? "Save Updated Story" : "Continue to Verification"}
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                     </svg>
