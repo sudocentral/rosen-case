@@ -161,9 +161,15 @@ export default function IntakeLayout({ children }: IntakeLayoutProps) {
             return;
           }
 
-          // Skip redirect if edit=1 AND we're on upload page
+          // Skip redirect if edit=1 AND we're on upload or statement page
           if (urlParams.get("edit") === "1" && currentPath === "/c/upload") {
             console.log("[IntakeLayout] edit=1 detected on upload, allowing");
+            setIsChecking(false);
+            return;
+          }
+
+          if (urlParams.get("edit") === "1" && currentPath === "/c/statement") {
+            console.log("[IntakeLayout] edit=1 detected on statement, allowing");
             setIsChecking(false);
             return;
           }
