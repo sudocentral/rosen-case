@@ -6,7 +6,7 @@
  * Includes ToS acceptance and encrypted PDF detection
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Alert from "@/components/Alert";
 import ClientPortalHeader from "@/components/ClientPortalHeader";
@@ -364,6 +364,27 @@ export default function UploadPage() {
     // Reset input value so the same file can be selected again after deletion
     e.target.value = "";
   };
+
+  const dropzoneRef = useRef<HTMLDivElement>(null);
+
+  // Catch files dropped anywhere on the page (outside the dropzone)
+  useEffect(() => {
+    const onDragOver = (e: DragEvent) => { e.preventDefault(); };
+    const onDrop = (e: DragEvent) => {
+      e.preventDefault();
+      const target = e.target as HTMLElement;
+      if (dropzoneRef.current && target && dropzoneRef.current.contains(target)) return;
+      if (e.dataTransfer?.files?.length) {
+        addFiles(e.dataTransfer.files);
+      }
+    };
+    document.addEventListener("dragover", onDragOver);
+    document.addEventListener("drop", onDrop);
+    return () => {
+      document.removeEventListener("dragover", onDragOver);
+      document.removeEventListener("drop", onDrop);
+    };
+  }, []);
 
   const removeLocalFile = (id: string) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
@@ -986,6 +1007,7 @@ export default function UploadPage() {
 
             {/* Drop zone */}
             <div
+              ref={dropzoneRef}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
