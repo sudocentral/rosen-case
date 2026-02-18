@@ -776,6 +776,8 @@ export default function ClientStatusPage() {
   const [deleteCaseId, setDeleteCaseId] = useState<string | null>(null);
   const [deleteCasePatient, setDeleteCasePatient] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  // Documents expand/collapse
+  const [showAllFiles, setShowAllFiles] = useState(false);
 
   // C-3: Auto-refetch callback when reveal countdown expires
   const handleRevealExpire = useCallback(async () => {
@@ -1902,7 +1904,7 @@ export default function ClientStatusPage() {
                     Uploaded Documents ({uploadedFiles.length})
                   </h3>
                   <div className="space-y-2">
-                    {uploadedFiles.slice(0, 5).map((file, i) => (
+                    {(showAllFiles ? uploadedFiles : uploadedFiles.slice(0, 5)).map((file, i) => (
                       <div key={file.id || i} className="flex items-center gap-3 py-2">
                         <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
                           <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1916,9 +1918,28 @@ export default function ClientStatusPage() {
                       </div>
                     ))}
                     {uploadedFiles.length > 5 && (
-                      <p className="text-sm text-gray-500 pt-2">+ {uploadedFiles.length - 5} more files</p>
+                      <button
+                        onClick={() => setShowAllFiles(!showAllFiles)}
+                        className="text-sm text-[#1a5f7a] hover:text-[#134a5f] font-medium pt-2 flex items-center gap-1"
+                      >
+                        {showAllFiles
+                          ? "Show fewer"
+                          : `+ ${uploadedFiles.length - 5} more files`}
+                        <svg className={`w-4 h-4 transition-transform ${showAllFiles ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
                     )}
                   </div>
+                  <a
+                    href="/c/upload"
+                    className="mt-4 w-full flex items-center justify-center gap-2 text-sm text-[#1a5f7a] hover:text-[#134a5f] font-medium py-2 border border-[#1a5f7a] rounded-lg hover:bg-blue-50 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Upload More Documents
+                  </a>
                 </div>
               )}
             </div>
