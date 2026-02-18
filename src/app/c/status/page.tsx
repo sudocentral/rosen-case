@@ -801,8 +801,8 @@ export default function ClientStatusPage() {
     }
   }, [selectedCaseId]);
 
-  // Reveal countdown for decision gating - auto-refetches when countdown expires
-  const revealCountdown = useRevealCountdown(caseStatus?.decision_reveal_at ?? null, handleRevealExpire);
+  // Hook still runs for auto-refetch on reveal expiry; countdown UI removed per directive
+  useRevealCountdown(caseStatus?.decision_reveal_at ?? null, handleRevealExpire);
 
   useEffect(() => {
     // Check for token in URL first (magic link from email)
@@ -1319,6 +1319,9 @@ export default function ClientStatusPage() {
                 {clientName ? `Welcome back, ${clientName.split(" ")[0]}` : "Your Cases"}
               </h1>
               <p className="text-gray-600">Select a case to view details and status</p>
+              <p className="text-sm text-gray-500 mt-2">
+                If you are an attorney or submitting for multiple clients, using the same email will show all cases in this portal.
+              </p>
             </div>
 
             {/* Search + Add New Patient */}
@@ -1688,31 +1691,7 @@ export default function ClientStatusPage() {
             )}
           </div>
 
-          {/* Decision Pending Reveal - Countdown Banner (hidden per directive) */}
-          {false && !caseStatus.determination_visible && caseStatus.decision_reveal_at && revealCountdown && (
-            <div className="mb-6 rounded-xl shadow-md overflow-hidden bg-gradient-to-r from-blue-500 to-indigo-600">
-              <div className="px-4 py-5 sm:px-6 sm:py-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-xl sm:text-2xl font-bold text-white">Under Review (Pending)</h2>
-                    <p className="text-sm sm:text-base text-white/90">
-                      Your case is being finalized. Results available in:
-                    </p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="text-2xl font-mono font-bold text-white">
-                        {String(revealCountdown.hours).padStart(2, "0")}:{String(revealCountdown.minutes).padStart(2, "0")}:{String(revealCountdown.seconds).padStart(2, "0")}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Decision Pending Reveal - Countdown Banner: removed per directive (was useRevealCountdown display) */}
 
           {/* Qualification Banner */}
           {caseStatus.determination_visible && caseStatus.determination && (
