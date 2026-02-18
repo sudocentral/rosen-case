@@ -609,37 +609,96 @@ export default function UploadPage() {
     setSecuringFiles(true);
     setSentinelError("");
 
+    // Helpers for fuzzy filename matching
+    const normalizeName = (name: string) =>
+      name.toLowerCase().replace(/\s+/g, " ").replace(/[_-]+/g, "_").replace(/_+/g, "_").trim();
+
+    const stripTimestampPrefix = (name: string) =>
+      name.replace(/^\d{10,13}_/, "");
+
+    const resolveFileId = (sentinelName: string, files: typeof existingFiles) => {
+      // 1) Exact match
+      const exact = files.find(f => f.filename === sentinelName);
+      if (exact) return exact;
+
+      // 2) Normalized match
+      const sNorm = normalizeName(sentinelName);
+      const normalized = files.find(f => normalizeName(f.filename) === sNorm);
+      if (normalized) return normalized;
+
+      // 3) Timestamp-stripped match (exact then normalized)
+      const sStripped = stripTimestampPrefix(sentinelName);
+      const strippedExact = files.find(f => stripTimestampPrefix(f.filename) === sStripped);
+      if (strippedExact) return strippedExact;
+
+      const sStrippedNorm = normalizeName(sStripped);
+      const strippedNorm = files.find(f => normalizeName(stripTimestampPrefix(f.filename)) === sStrippedNorm);
+      if (strippedNorm) return strippedNorm;
+
+      // 4) Suffix match (last resort, must be unique)
+      if (sStripped.length > 4) {
+        const suffixMatches = files.filter(f => f.filename.endsWith(sStripped));
+        if (suffixMatches.length === 1) return suffixMatches[0];
+        if (suffixMatches.length > 1) {
+          throw new Error(`Ambiguous match for ${sentinelName}, found ${suffixMatches.length} candidates`);
+        }
+      }
+
+      return null;
+    };
+
+    const failedFiles: string[] = [];
+
     try {
+      // Refresh file list so we match against freshest filenames
+      const freshFiles = await loadExistingFiles(token);
+
       // Step A: Call /file/:id/submit-password for each file to persist decryption
       for (const spf of sentinelPasswordFiles) {
-        const match = existingFiles.find(ef => ef.filename === spf.filename)
-          || existingFiles.find(ef => ef.filename.trim() === spf.filename.trim());
-
-        if (!match) {
-          throw new Error(`Could not find file ID for: ${spf.filename}`);
-        }
-
         const password = sentinelPasswords[spf.filename]?.trim();
         if (!password) continue;
 
-        console.log(`[batch-password] Decrypting ${spf.filename} (id=${match.id})`);
+        const match = resolveFileId(spf.filename, freshFiles);
 
-        const response = await fetch(`${API_URL}/file/${match.id}/submit-password`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-intake-token": token,
-          },
-          body: JSON.stringify({ password }),
-        });
-
-        const data = await response.json();
-
-        if (!data.success || !data.data?.decrypted) {
-          throw new Error(data.error || `Invalid password for ${spf.filename}`);
+        if (!match) {
+          console.error(`[batch-password] No match for: ${spf.filename}`);
+          failedFiles.push(spf.filename);
+          continue;
         }
 
-        console.log(`[batch-password] Decrypted ${spf.filename}`);
+        console.log(`[batch-password] Decrypting ${spf.filename} (id=${match.id})`);
+
+        try {
+          const response = await fetch(`${API_URL}/file/${match.id}/submit-password`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-intake-token": token,
+            },
+            body: JSON.stringify({ password }),
+          });
+
+          const data = await response.json();
+
+          if (!data.success || !data.data?.decrypted) {
+            console.error(`[batch-password] Decrypt failed for ${spf.filename}: ${data.error || "unknown"}`);
+            failedFiles.push(spf.filename);
+            continue;
+          }
+
+          console.log(`[batch-password] Decrypted ${spf.filename}`);
+        } catch (fetchErr) {
+          console.error(`[batch-password] Request failed for ${spf.filename}:`, fetchErr);
+          failedFiles.push(spf.filename);
+          continue;
+        }
+      }
+
+      // If any failed, keep modal open with error
+      if (failedFiles.length > 0) {
+        setSentinelError(`Could not decrypt: ${failedFiles.join(", ")}. Please check passwords and try again.`);
+        setSecuringFiles(false);
+        return;
       }
 
       // Step B: Refresh file list and re-run postprocess (no passwords needed now)
