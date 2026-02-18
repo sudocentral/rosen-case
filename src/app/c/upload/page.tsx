@@ -360,9 +360,9 @@ export default function UploadPage() {
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    e.stopPropagation();
     setIsDragging(false);
-    addFiles(e.dataTransfer.files);
+    // Do NOT call addFiles here — document-level handler is the sole drop→addFiles path
+    // This prevents double-add from React synthetic + native event both firing
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -567,7 +567,14 @@ export default function UploadPage() {
       // Handle NEEDS_PASSWORD = encrypted file found (freeze UI, show password modal)
       if (data.status === "NEEDS_PASSWORD") {
         const files = (data.files || []).map(f => ({ filename: typeof f === "string" ? f : f }));
-        setSentinelPasswordFiles(files);
+        // Dedupe by filename — backend may return duplicate records from multiple uploads
+        const seen = new Set<string>();
+        const uniqueFiles = files.filter(f => {
+          if (seen.has(f.filename)) return false;
+          seen.add(f.filename);
+          return true;
+        });
+        setSentinelPasswordFiles(uniqueFiles);
         setSentinelPasswords({});
         setSecuringFiles(false);
         return;
@@ -664,7 +671,14 @@ export default function UploadPage() {
       // Handle NEEDS_PASSWORD = still encrypted (wrong password?)
       if (data.status === "NEEDS_PASSWORD") {
         const files = (data.files || []).map(f => ({ filename: typeof f === "string" ? f : f }));
-        setSentinelPasswordFiles(files);
+        // Dedupe by filename — backend may return duplicate records
+        const seen = new Set<string>();
+        const uniqueFiles = files.filter(f => {
+          if (seen.has(f.filename)) return false;
+          seen.add(f.filename);
+          return true;
+        });
+        setSentinelPasswordFiles(uniqueFiles);
         setSentinelError("Incorrect password. Please try again.");
         setSecuringFiles(false);
         return;
