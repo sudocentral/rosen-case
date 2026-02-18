@@ -287,7 +287,7 @@ export default function CardAuthorizationPage() {
 
     // Sherlock already triggered at statement submission (silent, in background)
     // Just redirect to status after showing success message
-    setTimeout(() => router.push("/c/status"), 5000);
+    setTimeout(() => router.push("/c/status"), 10000);
   }, [router]);
 
   if (loading) {
