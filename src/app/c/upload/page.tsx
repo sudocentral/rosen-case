@@ -884,7 +884,7 @@ export default function UploadPage() {
       <>
         <ClientPortalHeader showSwitcher={false} />
         <main className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1a5f7a]"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-[#1a5f7a]"></div>
         </main>
       </>
     );
@@ -1114,7 +1114,7 @@ export default function UploadPage() {
                 {/* SECURING_FILES state */}
                 {securingFiles && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1a5f7a]"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-4 border-gray-200 border-t-[#1a5f7a]"></div>
                     <div>
                       <p className="font-medium text-blue-900">Securing your files...</p>
                       <p className="text-sm text-blue-700">Validating uploads and checking for encryption.</p>
@@ -1309,7 +1309,7 @@ export default function UploadPage() {
               /* Decrypting state for large files */
               <div className="text-center py-4">
                 <div className="flex justify-center mb-4">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1a5f7a]"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-[#1a5f7a]"></div>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Securely decrypting your document...</h3>
                 <p className="text-sm text-gray-600">
@@ -1394,7 +1394,7 @@ export default function UploadPage() {
             {securingFiles ? (
               <div className="text-center py-4">
                 <div className="flex justify-center mb-4">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1a5f7a]"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-[#1a5f7a]"></div>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Unlocking your files...</h3>
                 <p className="text-sm text-gray-600">
