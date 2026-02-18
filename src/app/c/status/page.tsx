@@ -1686,8 +1686,8 @@ export default function ClientStatusPage() {
             )}
           </div>
 
-          {/* Decision Pending Reveal - Countdown Banner */}
-          {!caseStatus.determination_visible && caseStatus.decision_reveal_at && revealCountdown && (
+          {/* Decision Pending Reveal - Countdown Banner (hidden per directive) */}
+          {false && !caseStatus.determination_visible && caseStatus.decision_reveal_at && revealCountdown && (
             <div className="mb-6 rounded-xl shadow-md overflow-hidden bg-gradient-to-r from-blue-500 to-indigo-600">
               <div className="px-4 py-5 sm:px-6 sm:py-6">
                 <div className="flex items-center gap-4">
