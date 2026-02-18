@@ -33,6 +33,19 @@ export default function LandingPage() {
   const [successType, setSuccessType] = useState<"new" | "login">("new");
   const [error, setError] = useState("");
 
+  // Format phone as (XXX) XXX-XXXX while typing
+  function formatPhoneInput(value: string): string {
+    const digits = value.replace(/\D/g, "").slice(0, 10);
+    if (digits.length === 0) return "";
+    if (digits.length <= 3) return `(${digits}`;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  // Strip to raw digits for API submission
+  function phoneDigits(formatted: string): string {
+    return formatted.replace(/\D/g, "");
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -74,7 +87,7 @@ export default function LandingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: email.trim(),
-          phone: phone.trim(),
+          phone: phoneDigits(phone),
           name: name.trim(),
           source: "case_landing",
         }),
@@ -222,7 +235,7 @@ export default function LandingPage() {
                 type="tel"
                 required
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
                 placeholder="(555) 123-4567"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent outline-none"
               />
