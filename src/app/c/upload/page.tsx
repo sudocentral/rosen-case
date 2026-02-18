@@ -551,7 +551,9 @@ export default function UploadPage() {
 
       // Handle NEEDS_PASSWORD = encrypted file found (freeze UI, show password modal)
       if (data.status === "NEEDS_PASSWORD") {
-        const files = (data.files || []).map(f => ({ filename: typeof f === "string" ? f : f }));
+        const rawFiles = (data.files || []).map(f => typeof f === "string" ? f : f);
+        const uniqueNames = [...new Set(rawFiles)];
+        const files = uniqueNames.map(f => ({ filename: f }));
         setSentinelPasswordFiles(files);
         setSentinelPasswords({});
         setSecuringFiles(false);
