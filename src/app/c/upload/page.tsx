@@ -798,8 +798,10 @@ export default function UploadPage() {
     await runSentinelPostprocess();
   };
 
+  const isEditMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("edit") === "1";
+
   const continueToStatement = () => {
-    window.location.href = "/c/statement";
+    window.location.href = isEditMode ? "/c/statement?edit=1" : "/c/statement";
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -1083,7 +1085,7 @@ export default function UploadPage() {
                       status="ready"
                       progress={100}
                       pdfRequiresPassword={file.pdfRequiresPassword}
-                      onRemove={() => excludeExistingFile(file.id)}
+                      onRemove={isEditMode ? undefined : () => excludeExistingFile(file.id)}
                       onUnlock={file.pdfRequiresPassword ? () => openPasswordModal(file) : undefined}
                     />
                   ))}
@@ -1244,11 +1246,19 @@ export default function UploadPage() {
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                   >
-                    Continue to Your Story
+                    {isEditMode ? "Edit Your Story" : "Continue to Your Story"}
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                     </svg>
                   </button>
+                  {isEditMode && (
+                    <button
+                      onClick={() => { window.location.href = "/c/status"; }}
+                      className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg font-medium transition-colors text-gray-600 hover:bg-gray-100 border border-gray-300 mt-3"
+                    >
+                      Return to Case Status
+                    </button>
+                  )}
                 </div>
               </div>
             )}
