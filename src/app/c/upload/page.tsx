@@ -6,7 +6,7 @@
  * Includes ToS acceptance and encrypted PDF detection
  */
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Alert from "@/components/Alert";
 import ClientPortalHeader from "@/components/ClientPortalHeader";
@@ -105,9 +105,6 @@ export default function UploadPage() {
   const [dobSubmitting, setDobSubmitting] = useState(false);
   const [dobError, setDobError] = useState("");
   const [dobCorrected, setDobCorrected] = useState(false);
-
-  const dropzoneRef = useRef<HTMLDivElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Check for token in URL first (magic link from NEEDS_MORE email)
@@ -326,43 +323,28 @@ export default function UploadPage() {
   };
 
   const addFiles = (newFiles: FileList | File[]) => {
-    setFiles((prev) => {
-      const existingFingerprints = new Set(
-        prev.map((f) => `${f.file.name}|${f.file.size}|${f.file.lastModified}`)
-      );
+    const newFileNames = new Set(Array.from(newFiles).map(f => f.name));
 
-      const newFileNames = new Set(Array.from(newFiles).map(f => f.name));
-
-      const filesToAdd: UploadFile[] = Array.from(newFiles)
-        .filter((file) => {
-          const fp = `${file.name}|${file.size}|${file.lastModified}`;
-          return !existingFingerprints.has(fp);
-        })
-        .map((file) => {
-          const error = validateFile(file);
-          return {
-            id: Math.random().toString(36).substring(7),
-            file,
-            status: error ? "error" : "pending",
-            progress: 0,
-            error: error || undefined,
-          } as UploadFile;
-        });
-
-      if (filesToAdd.length === 0) return prev;
-
-      return [
-        ...prev.filter((f) => !(f.status === "error" && newFileNames.has(f.file.name))),
-        ...filesToAdd,
-      ];
+    const filesToAdd: UploadFile[] = Array.from(newFiles).map((file) => {
+      const error = validateFile(file);
+      return {
+        id: Math.random().toString(36).substring(7),
+        file,
+        status: error ? "error" : "pending",
+        progress: 0,
+        error: error || undefined,
+      } as UploadFile;
     });
+    setFiles((prev) => [
+      ...prev.filter((f) => !(f.status === "error" && newFileNames.has(f.file.name))),
+      ...filesToAdd,
+    ]);
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    // Do NOT call addFiles here — document-level handler is the sole drop→addFiles path
-    // This prevents double-add from React synthetic + native event both firing
+    addFiles(e.dataTransfer.files);
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -373,24 +355,6 @@ export default function UploadPage() {
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-  }, []);
-
-  // Page-level drop capture: catch files dropped outside the dropzone (prevent browser default)
-  // Dropzone drops are handled by handleDrop (which stopPropagates so this won't double-fire)
-  useEffect(() => {
-    const onDragOver = (e: DragEvent) => { e.preventDefault(); };
-    const onDrop = (e: DragEvent) => {
-      e.preventDefault();
-      if (e.dataTransfer?.files?.length) {
-        addFiles(e.dataTransfer.files);
-      }
-    };
-    document.addEventListener("dragover", onDragOver);
-    document.addEventListener("drop", onDrop);
-    return () => {
-      document.removeEventListener("dragover", onDragOver);
-      document.removeEventListener("drop", onDrop);
-    };
   }, []);
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -567,14 +531,7 @@ export default function UploadPage() {
       // Handle NEEDS_PASSWORD = encrypted file found (freeze UI, show password modal)
       if (data.status === "NEEDS_PASSWORD") {
         const files = (data.files || []).map(f => ({ filename: typeof f === "string" ? f : f }));
-        // Dedupe by filename — backend may return duplicate records from multiple uploads
-        const seen = new Set<string>();
-        const uniqueFiles = files.filter(f => {
-          if (seen.has(f.filename)) return false;
-          seen.add(f.filename);
-          return true;
-        });
-        setSentinelPasswordFiles(uniqueFiles);
+        setSentinelPasswordFiles(files);
         setSentinelPasswords({});
         setSecuringFiles(false);
         return;
@@ -671,14 +628,7 @@ export default function UploadPage() {
       // Handle NEEDS_PASSWORD = still encrypted (wrong password?)
       if (data.status === "NEEDS_PASSWORD") {
         const files = (data.files || []).map(f => ({ filename: typeof f === "string" ? f : f }));
-        // Dedupe by filename — backend may return duplicate records
-        const seen = new Set<string>();
-        const uniqueFiles = files.filter(f => {
-          if (seen.has(f.filename)) return false;
-          seen.add(f.filename);
-          return true;
-        });
-        setSentinelPasswordFiles(uniqueFiles);
+        setSentinelPasswordFiles(files);
         setSentinelError("Incorrect password. Please try again.");
         setSecuringFiles(false);
         return;
@@ -1034,28 +984,23 @@ export default function UploadPage() {
               </div>
             )}
 
-            {/* Hidden file input — triggered by dropzone click, NOT overlaying the dropzone */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept=".pdf,.jpg,.jpeg,.png,.gif,.tiff,.tif,.bmp,.webp,.heic,.heif,.doc,.docx,.txt,.rtf,.zip"
-              onChange={handleFileInput}
-              className="hidden"
-            />
-
             {/* Drop zone */}
             <div
-              ref={dropzoneRef}
               onDrop={handleDrop}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
-              onClick={() => fileInputRef.current?.click()}
               className={`
                 relative border-2 border-dashed rounded-xl p-8 sm:p-12 text-center transition-colors cursor-pointer
                 ${isDragging ? "border-[#1a5f7a] bg-blue-50" : "border-gray-300 hover:border-gray-400"}
               `}
             >
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.jpg,.jpeg,.png,.gif,.tiff,.tif,.bmp,.webp,.heic,.heif,.doc,.docx,.txt,.rtf,.zip"
+                onChange={handleFileInput}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
               <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
