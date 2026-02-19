@@ -65,9 +65,11 @@ interface SetupFormProps {
   clientSecret: string;
   caseId: string;
   onSuccess: () => void;
+  dbqCount: number;
+  physicianStatementRequested: boolean;
 }
 
-function SetupForm({ clientSecret, caseId, onSuccess }: SetupFormProps) {
+function SetupForm({ clientSecret, caseId, onSuccess, dbqCount, physicianStatementRequested }: SetupFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -108,6 +110,8 @@ function SetupForm({ clientSecret, caseId, onSuccess }: SetupFormProps) {
           body: JSON.stringify({
             setupIntentId: setupIntent.id,
             paymentMethodId: setupIntent.payment_method,
+            dbq_count: dbqCount,
+            physician_statement_requested: physicianStatementRequested,
           }),
         });
 
@@ -198,6 +202,8 @@ export default function CardAuthorizationPage() {
   const [hasFiles, setHasFiles] = useState(false);
   const [success, setSuccess] = useState(false);
   const [serviceType, setServiceType] = useState<string | null>(null);
+  const [dbqCount, setDbqCount] = useState(0);
+  const [physicianStatementRequested, setPhysicianStatementRequested] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("rosen_client_token");
@@ -418,6 +424,36 @@ export default function CardAuthorizationPage() {
               </p>
             </div>
 
+            {/* DBQ Add-On (VA cases only) */}
+            {(serviceType === "va" || serviceType === "va-disability") && (
+              <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
+                <h3 className="font-semibold text-gray-900 mb-2">Optional: Disability Benefits Questionnaires (DBQs)</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  A DBQ is a VA-recognized form documenting the severity, symptoms, and functional impact of a specific condition for disability compensation. One DBQ is required per ratable condition. $199 per DBQ.
+                </p>
+                <div className="flex items-center gap-4">
+                  <label className="text-sm font-medium text-gray-700">Number of DBQs:</label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDbqCount(Math.max(0, dbqCount - 1))}
+                      className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                      disabled={dbqCount === 0}
+                    >&minus;</button>
+                    <span className="w-10 text-center font-semibold text-lg">{dbqCount}</span>
+                    <button
+                      type="button"
+                      onClick={() => setDbqCount(dbqCount + 1)}
+                      className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50"
+                    >+</button>
+                  </div>
+                  {dbqCount > 0 && (
+                    <span className="text-sm text-gray-500">= ${dbqCount * 199}.00</span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {clientSecret && caseId && publishableKey ? (
               <Elements
                 stripe={getStripePromise(publishableKey)}
@@ -436,6 +472,8 @@ export default function CardAuthorizationPage() {
                   clientSecret={clientSecret}
                   caseId={caseId}
                   onSuccess={handleSuccess}
+                  dbqCount={dbqCount}
+                  physicianStatementRequested={physicianStatementRequested}
                 />
               </Elements>
             ) : (
