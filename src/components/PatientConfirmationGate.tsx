@@ -32,6 +32,7 @@ export default function PatientConfirmationGate({
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [caseType, setCaseType] = useState("VA_INITIAL");
 
   // For the "Yes" flow, we collect DOB for the requestor
   const [isRequestor, setIsRequestor] = useState(true);
@@ -102,7 +103,8 @@ export default function PatientConfirmationGate({
         body: JSON.stringify({
           patient_name: name,
           patient_name_confirmed: true,
-          date_of_birth: dob || undefined
+          date_of_birth: dob || undefined,
+          case_type: caseType
         })
       });
 
@@ -211,6 +213,26 @@ export default function PatientConfirmationGate({
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Case Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={caseType}
+              onChange={(e) => setCaseType(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent bg-white"
+              disabled={saving}
+            >
+              <option value="VA_INITIAL">VA Disability (Initial Claim)</option>
+              <option value="VA_INCREASE">VA Disability (Increase)</option>
+              <option value="SSDI">SSDI / SSI</option>
+              <option value="INSURANCE_DENIAL">Insurance Denial</option>
+              <option value="MED_MAL">Medical Malpractice</option>
+              <option value="SECOND_OPINION">Second Opinion</option>
+              <option value="RECORD_REVIEW">Medical Record Review</option>
+            </select>
+          </div>
+
           {error && (
             <p className="text-red-600 text-sm">{error}</p>
           )}
@@ -288,6 +310,26 @@ export default function PatientConfirmationGate({
               maxLength={10}
               autoComplete="bday"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Case Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={caseType}
+              onChange={(e) => setCaseType(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent bg-white"
+              disabled={saving}
+            >
+              <option value="VA_INITIAL">VA Disability (Initial Claim)</option>
+              <option value="VA_INCREASE">VA Disability (Increase)</option>
+              <option value="SSDI">SSDI / SSI</option>
+              <option value="INSURANCE_DENIAL">Insurance Denial</option>
+              <option value="MED_MAL">Medical Malpractice</option>
+              <option value="SECOND_OPINION">Second Opinion</option>
+              <option value="RECORD_REVIEW">Medical Record Review</option>
+            </select>
           </div>
 
           {error && (
