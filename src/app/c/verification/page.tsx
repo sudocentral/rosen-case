@@ -428,7 +428,7 @@ export default function CardAuthorizationPage() {
               <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
                 <h3 className="font-semibold text-gray-900 mb-2">Optional: Disability Benefits Questionnaires (DBQs)</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  A DBQ is a VA-recognized form documenting the severity, symptoms, and functional impact of a specific condition for disability compensation. One DBQ is required per ratable condition. $199 per DBQ.
+                  A DBQ is a VA-recognized form documenting the severity, symptoms, and functional impact of a specific condition for disability compensation. One DBQ is required per ratable condition. $1<strong>99 per DBQ.</strong>
                 </p>
                 <div className="flex items-center gap-4">
                   <label className="text-sm font-medium text-gray-700">Number of DBQs:</label>
