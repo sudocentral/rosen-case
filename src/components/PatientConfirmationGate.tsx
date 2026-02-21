@@ -32,7 +32,7 @@ export default function PatientConfirmationGate({
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [caseType, setCaseType] = useState("VA_INITIAL");
+  const [caseType, setCaseType] = useState("VA");
 
   // For the "Yes" flow, we collect DOB for the requestor
   const [isRequestor, setIsRequestor] = useState(true);
@@ -103,14 +103,29 @@ export default function PatientConfirmationGate({
         body: JSON.stringify({
           patient_name: name,
           patient_name_confirmed: true,
-          date_of_birth: dob || undefined,
-          case_type: caseType
+          date_of_birth: dob || undefined
         })
       });
 
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || "Failed to save");
+      }
+
+      // Persist case type via dedicated endpoint
+      const ctResponse = await fetch(
+        "https://api.sudomanaged.com/api/rosen/public/client/case-type",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-intake-token": token
+          },
+          body: JSON.stringify({ case_type: caseType })
+        }
+      );
+      if (!ctResponse.ok) {
+        console.warn("[PatientGate] case-type persist failed:", ctResponse.status);
       }
 
       onConfirmed(name);
@@ -223,12 +238,13 @@ export default function PatientConfirmationGate({
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent bg-white"
               disabled={saving}
             >
-              <option value="VA_INITIAL">VA Disability (Initial Claim)</option>
-              <option value="VA_INCREASE">VA Disability (Increase)</option>
+              <option value="VA">VA Disability</option>
               <option value="SSDI">SSDI / SSI</option>
-              <option value="INSURANCE_DENIAL">Insurance Denial</option>
               <option value="MED_MAL">Medical Malpractice</option>
+              <option value="PI">Personal Injury</option>
+              <option value="WORKERS_COMP">Workers&apos; Compensation</option>
               <option value="SECOND_OPINION">Second Opinion</option>
+              <option value="INSURANCE_DENIAL">Insurance Denial</option>
               <option value="RECORD_REVIEW">Medical Record Review</option>
             </select>
           </div>
@@ -322,12 +338,13 @@ export default function PatientConfirmationGate({
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent bg-white"
               disabled={saving}
             >
-              <option value="VA_INITIAL">VA Disability (Initial Claim)</option>
-              <option value="VA_INCREASE">VA Disability (Increase)</option>
+              <option value="VA">VA Disability</option>
               <option value="SSDI">SSDI / SSI</option>
-              <option value="INSURANCE_DENIAL">Insurance Denial</option>
               <option value="MED_MAL">Medical Malpractice</option>
+              <option value="PI">Personal Injury</option>
+              <option value="WORKERS_COMP">Workers&apos; Compensation</option>
               <option value="SECOND_OPINION">Second Opinion</option>
+              <option value="INSURANCE_DENIAL">Insurance Denial</option>
               <option value="RECORD_REVIEW">Medical Record Review</option>
             </select>
           </div>
