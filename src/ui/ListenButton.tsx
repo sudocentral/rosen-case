@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Volume2, VolumeX, Pause, Play, Loader2 } from "lucide-react";
 
-const POLLY_API_URL = "https://api.sudomanaged.com/api/rosen/public/polly/speak";
+const TTS_API_URL = "https://api.sudomanaged.com/api/rosen/public/elevenlabs/speak";
 
 interface ListenButtonProps {
   text: string;
@@ -57,9 +57,9 @@ export function ListenButton({ text, className = "", variant = "secondary" }: Li
     setIsLoading(true);
 
     try {
-      const body = { text, voice: "Matthew", engine: "neural" };
+      const body = { text };
 
-      const response = await fetch(POLLY_API_URL, {
+      const response = await fetch(TTS_API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
