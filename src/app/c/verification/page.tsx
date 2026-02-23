@@ -424,7 +424,8 @@ export default function CardAuthorizationPage() {
               </p>
             </div>
 
-            {/* DBQ Add-On */}
+            {/* DBQ Add-On — VA only */}
+            {(serviceType === "va" || serviceType === "va-disability") && (
               <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
                 <h3 className="font-semibold text-gray-900 mb-2">Optional: Disability Benefits Questionnaires (DBQs)</h3>
                 <p className="text-sm text-gray-600 mb-4">
@@ -451,6 +452,7 @@ export default function CardAuthorizationPage() {
                   )}
                 </div>
               </div>
+            )}
 
             {clientSecret && caseId && publishableKey ? (
               <Elements
