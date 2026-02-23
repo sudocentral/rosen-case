@@ -205,6 +205,7 @@ export default function CardAuthorizationPage() {
   const [success, setSuccess] = useState(false);
   const [serviceType, setServiceType] = useState<string | null>(null);
   const [dbqCount, setDbqCount] = useState(0);
+  const [showDbqInfo, setShowDbqInfo] = useState(false);
   const [physicianStatementRequested, setPhysicianStatementRequested] = useState(false);
   const [expeditedDelivery, setExpeditedDelivery] = useState<"STANDARD_7_DAYS" | "EXPEDITED_72_HOURS">("STANDARD_7_DAYS");
 
@@ -437,10 +438,18 @@ export default function CardAuthorizationPage() {
             {(serviceType === "va" || serviceType === "va-disability" || serviceType === "va_nexus") && (
               <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
                 <h3 className="font-semibold text-gray-900 mb-2">Optional: Disability Benefits Questionnaires (DBQs)</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  A DBQ is a VA-recognized form documenting the severity, symptoms, and functional impact of a specific condition for disability compensation. One DBQ is required per ratable condition. $1<strong>99 per DBQ.</strong> (You will not be charged for DBQ(s) unless you qualify.)
-                </p>
-                <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-600 space-y-3 mb-4">
+                  <p>
+                    A Disability Benefits Questionnaire (DBQ) is a VA-recognized medical form used to document the diagnosis, severity, symptoms, and functional impact of a specific medical condition for disability compensation purposes.
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-gray-600">
+                    <li>DBQs are completed per condition being evaluated.</li>
+                    <li>If you are claiming multiple conditions, more than one DBQ may be appropriate.</li>
+                  </ul>
+                  <p className="font-semibold text-gray-900">$199 per DBQ</p>
+                  <p className="text-xs text-gray-500">You will not be charged unless you medically qualify.</p>
+                </div>
+                <div className="flex items-center gap-4 mb-3">
                   <label className="text-sm font-medium text-gray-700">Number of DBQs:</label>
                   <div className="flex items-center gap-2">
                     <button
@@ -460,6 +469,16 @@ export default function CardAuthorizationPage() {
                     <span className="text-sm text-gray-500">= ${dbqCount * 199}.00</span>
                   )}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDbqInfo(true)}
+                  className="inline-flex items-center gap-1.5 text-sm text-[#1a5f7a] hover:text-[#134a5f] font-medium"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  What is a DBQ?
+                </button>
               </div>
             )}
 
@@ -524,7 +543,82 @@ export default function CardAuthorizationPage() {
               </div>
             )}
 
-            {/* Security badges */}
+            {/* DBQ Info Modal */}
+      {showDbqInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowDbqInfo(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900">What Is a Disability Benefits Questionnaire (DBQ)?</h2>
+              <button onClick={() => setShowDbqInfo(false)} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="text-sm text-gray-700 space-y-4">
+              <p>
+                A Disability Benefits Questionnaire (DBQ) is a standardized medical form used by the U.S. Department of Veterans Affairs to evaluate the severity and functional impact of a specific medical condition.
+              </p>
+              <div>
+                <p className="font-semibold text-gray-900 mb-2">A DBQ helps document:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Your formal diagnosis</li>
+                  <li>Your current symptoms</li>
+                  <li>Objective medical findings</li>
+                  <li>Functional limitations</li>
+                  <li>Criteria that directly relate to VA rating percentages</li>
+                </ul>
+              </div>
+              <p className="text-gray-600 italic">
+                A DBQ supports how your condition is rated. It does not establish service connection by itself.
+              </p>
+
+              <hr className="border-gray-200" />
+
+              <div>
+                <h3 className="font-bold text-gray-900 mb-2">How Many DBQs Do I Need?</h3>
+                <p className="mb-2">DBQs are completed per medical condition being evaluated.</p>
+                <p className="font-semibold text-gray-900 mb-1">You may need more than one DBQ if:</p>
+                <ul className="list-disc list-inside space-y-1 mb-3">
+                  <li>You are claiming multiple unrelated conditions (Example: PTSD, migraines, and a back condition)</li>
+                  <li>You are claiming conditions affecting different body systems (Mental health, orthopedic, respiratory, neurological, etc.)</li>
+                  <li>You are filing for increases on multiple service-connected conditions</li>
+                </ul>
+                <p className="font-semibold text-gray-900 mb-1">You usually do not need multiple DBQs if:</p>
+                <ul className="list-disc list-inside space-y-1 mb-3">
+                  <li>Multiple symptoms fall under one condition (Example: anxiety and depression are documented under one Mental Health DBQ)</li>
+                  <li>You are only evaluating one condition</li>
+                </ul>
+                <p className="text-gray-600 italic">
+                  If you are unsure how many DBQs are appropriate, our physician-led review will determine the correct number based on your medical documentation and claim strategy.
+                </p>
+              </div>
+
+              <hr className="border-gray-200" />
+
+              <div>
+                <h3 className="font-bold text-gray-900 mb-2">DBQ vs. Nexus Opinion</h3>
+                <ul className="space-y-2">
+                  <li><span className="font-semibold">A DBQ</span> documents severity for rating purposes.</li>
+                  <li><span className="font-semibold">A Nexus Opinion</span> establishes service connection between your condition and military service.</li>
+                </ul>
+                <p className="mt-2">Some cases benefit from one. Some benefit from both.</p>
+                <p className="font-semibold text-gray-900 mt-1">We determine this during your medical review.</p>
+              </div>
+            </div>
+            <div className="mt-6">
+              <button
+                onClick={() => setShowDbqInfo(false)}
+                className="w-full px-4 py-2.5 bg-[#1a5f7a] text-white rounded-lg font-medium hover:bg-[#134a5f] transition-colors"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Security badges */}
             <div className="mt-8 flex items-center justify-center gap-6 text-gray-400">
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
