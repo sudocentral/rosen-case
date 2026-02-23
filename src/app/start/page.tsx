@@ -44,8 +44,12 @@ const getServiceConfig = (service: ServiceType) => {
 // Inner component that uses useSearchParams
 function StartPageContent() {
   const searchParams = useSearchParams();
-  const serviceParam = (searchParams.get("service") || "general") as ServiceType;
-  const config = getServiceConfig(serviceParam);
+  const serviceParam = (searchParams.get("service") || "") as ServiceType;
+  // Pre-select only if URL has a specific (non-general) service
+  const [selectedService, setSelectedService] = useState<ServiceType | "">(
+    serviceParam && serviceParam !== "general" ? serviceParam : ""
+  );
+  const config = getServiceConfig(selectedService || "general");
 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -95,7 +99,7 @@ function StartPageContent() {
           phone: phoneDigits(phone) || undefined,
           name: name.trim() || undefined,
           source: "case_marketing",
-          service: serviceParam,
+          service: selectedService,
           tos_accepted: true,
           tos_version: TOS_VERSION,
         }),
@@ -133,7 +137,7 @@ function StartPageContent() {
           phone: phoneDigits(phone) || undefined,
           name: name.trim() || undefined,
           source: "case_marketing",
-          service: serviceParam,
+          service: selectedService,
           resend: true,
           tos_accepted: true,
           tos_version: TOS_VERSION,
@@ -270,6 +274,27 @@ function StartPageContent() {
                   />
                 </div>
 
+                {/* Case Type field */}
+                <div>
+                  <label htmlFor="caseType" className="block text-sm font-medium text-gray-700 mb-2">
+                    Case Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="caseType"
+                    required
+                    value={selectedService}
+                    onChange={(e) => setSelectedService(e.target.value as ServiceType)}
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent outline-none transition-all bg-white"
+                  >
+                    <option value="" disabled>Select Case Type</option>
+                    <option value="va">VA Disability</option>
+                    <option value="ssdi">SSDI</option>
+                    <option value="insurance">Insurance Denial</option>
+                    <option value="malpractice">Medical Malpractice</option>
+                    <option value="second-opinion">Second Opinion</option>
+                  </select>
+                </div>
+
                 {/* Phone field */}
                 <div>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
@@ -334,7 +359,7 @@ function StartPageContent() {
                 {/* Submit button */}
                 <button
                   type="submit"
-                  disabled={isSubmitting || !email || !tosAccepted}
+                  disabled={isSubmitting || !email || !tosAccepted || !selectedService}
                   className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold text-lg transition-all ${
                     isSubmitting || !email
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
