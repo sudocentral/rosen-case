@@ -241,7 +241,7 @@ export default function CardAuthorizationPage() {
 
       const caseData = statusData.data;
       setCaseId(caseData.case_id);
-      setServiceType(caseData.service_type || null);
+      setServiceType(caseData.claim_type || caseData.service_type || null);
 
       // Check if files uploaded
       const filesRes = await fetch("https://api.sudomanaged.com/api/rosen/public/client/files", {
@@ -313,7 +313,7 @@ export default function CardAuthorizationPage() {
   }
 
   if (success) {
-    const isVA = serviceType === "va" || serviceType === "va-disability";
+    const isVA = serviceType === "va" || serviceType === "va-disability" || serviceType === "va_nexus";
     return (
       <>
         <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -428,7 +428,7 @@ export default function CardAuthorizationPage() {
             </div>
 
             {/* DBQ Add-On — VA only */}
-            {(serviceType === "va" || serviceType === "va-disability") && (
+            {(serviceType === "va" || serviceType === "va-disability" || serviceType === "va_nexus") && (
               <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
                 <h3 className="font-semibold text-gray-900 mb-2">Optional: Disability Benefits Questionnaires (DBQs)</h3>
                 <p className="text-sm text-gray-600 mb-4">
