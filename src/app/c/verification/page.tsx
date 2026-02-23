@@ -241,7 +241,13 @@ export default function CardAuthorizationPage() {
 
       const caseData = statusData.data;
       setCaseId(caseData.case_id);
-      setServiceType(caseData.claim_type || caseData.service_type || null);
+      // Use claim_type from API; if AUTO or missing, fall back to localStorage selection
+      let resolvedType = caseData.claim_type || caseData.service_type || null;
+      if (!resolvedType || resolvedType === "AUTO") {
+        const stored = typeof window !== "undefined" ? localStorage.getItem("rosen_selected_service") : null;
+        if (stored) resolvedType = stored;
+      }
+      setServiceType(resolvedType);
 
       // Check if files uploaded
       const filesRes = await fetch("https://api.sudomanaged.com/api/rosen/public/client/files", {

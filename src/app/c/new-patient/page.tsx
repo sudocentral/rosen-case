@@ -243,6 +243,9 @@ export default function NewPatientPage() {
       if (data.data?.case_id) {
         localStorage.setItem("rosen_case_id", data.data.case_id);
         localStorage.setItem("caseflow_active_case_id", data.data.case_id);
+        if (selectedService) {
+          localStorage.setItem("rosen_selected_service", selectedService);
+        }
       }
       if (data.data?.token) {
         localStorage.setItem("rosen_client_token", data.data.token);

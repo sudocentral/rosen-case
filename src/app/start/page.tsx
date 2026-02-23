@@ -111,6 +111,9 @@ function StartPageContent() {
         throw new Error(data.error || "Something went wrong. Please try again.");
       }
 
+      if (selectedService) {
+        localStorage.setItem("rosen_selected_service", selectedService);
+      }
       setIsSubmitted(true);
       setResendCooldown(60);
     } catch (err) {
