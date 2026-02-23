@@ -67,9 +67,10 @@ interface SetupFormProps {
   onSuccess: () => void;
   dbqCount: number;
   physicianStatementRequested: boolean;
+  expeditedDelivery: "STANDARD_7_DAYS" | "EXPEDITED_72_HOURS";
 }
 
-function SetupForm({ clientSecret, caseId, onSuccess, dbqCount, physicianStatementRequested }: SetupFormProps) {
+function SetupForm({ clientSecret, caseId, onSuccess, dbqCount, physicianStatementRequested, expeditedDelivery }: SetupFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -112,6 +113,7 @@ function SetupForm({ clientSecret, caseId, onSuccess, dbqCount, physicianStateme
             paymentMethodId: setupIntent.payment_method,
             dbq_count: dbqCount,
             physician_statement_requested: physicianStatementRequested,
+            expedited_delivery: expeditedDelivery,
           }),
         });
 
@@ -204,6 +206,7 @@ export default function CardAuthorizationPage() {
   const [serviceType, setServiceType] = useState<string | null>(null);
   const [dbqCount, setDbqCount] = useState(0);
   const [physicianStatementRequested, setPhysicianStatementRequested] = useState(false);
+  const [expeditedDelivery, setExpeditedDelivery] = useState<"STANDARD_7_DAYS" | "EXPEDITED_72_HOURS">("STANDARD_7_DAYS");
 
   useEffect(() => {
     const token = localStorage.getItem("rosen_client_token");
@@ -454,6 +457,38 @@ export default function CardAuthorizationPage() {
               </div>
             )}
 
+            {/* Expedited Delivery Option */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
+              <h3 className="font-semibold text-gray-900 mb-2">Expedited Delivery (Optional)</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Eligible clients can receive their IMO Report as fast as 72 hours from receipt of their relevant medical records. If, due to the lack of medical evidence we are unable to provide the report, we will not charge you the expedited service fee.
+              </p>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="expedited_delivery"
+                    value="STANDARD_7_DAYS"
+                    checked={expeditedDelivery === "STANDARD_7_DAYS"}
+                    onChange={() => setExpeditedDelivery("STANDARD_7_DAYS")}
+                    className="w-4 h-4 text-[#1a5f7a] focus:ring-[#1a5f7a]"
+                  />
+                  <span className="text-sm font-medium text-gray-900">7 Days — Included</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                  <input
+                    type="radio"
+                    name="expedited_delivery"
+                    value="EXPEDITED_72_HOURS"
+                    checked={expeditedDelivery === "EXPEDITED_72_HOURS"}
+                    onChange={() => setExpeditedDelivery("EXPEDITED_72_HOURS")}
+                    className="w-4 h-4 text-[#1a5f7a] focus:ring-[#1a5f7a]"
+                  />
+                  <span className="text-sm font-medium text-gray-900">72 Hours — $400</span>
+                </label>
+              </div>
+            </div>
+
             {clientSecret && caseId && publishableKey ? (
               <Elements
                 stripe={getStripePromise(publishableKey)}
@@ -474,6 +509,7 @@ export default function CardAuthorizationPage() {
                   onSuccess={handleSuccess}
                   dbqCount={dbqCount}
                   physicianStatementRequested={physicianStatementRequested}
+                  expeditedDelivery={expeditedDelivery}
                 />
               </Elements>
             ) : (
