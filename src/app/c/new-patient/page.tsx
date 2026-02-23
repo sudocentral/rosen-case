@@ -49,6 +49,7 @@ export default function NewPatientPage() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [selectedService, setSelectedService] = useState("");
   // Track if user has existing cases (for escape hatch visibility)
   const [hasExistingCases, setHasExistingCases] = useState(false);
 
@@ -228,6 +229,7 @@ export default function NewPatientPage() {
         body: JSON.stringify({
           patient_name: patientName.trim(),
           date_of_birth: dateOfBirth ? parseDateInput(dateOfBirth)?.iso : undefined,
+          service: selectedService,
         }),
       });
 
@@ -348,10 +350,31 @@ export default function NewPatientPage() {
                 </p>
               </div>
 
+              {/* Case Type */}
+              <div>
+                <label htmlFor="caseType" className="block text-sm font-medium text-gray-700 mb-2">
+                  Case Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="caseType"
+                  required
+                  value={selectedService}
+                  onChange={(e) => setSelectedService(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent text-lg bg-white"
+                >
+                  <option value="" disabled>Select Case Type</option>
+                  <option value="va">VA Disability</option>
+                  <option value="ssdi">SSDI</option>
+                  <option value="insurance">Insurance Denial</option>
+                  <option value="malpractice">Medical Malpractice</option>
+                  <option value="second-opinion">Second Opinion</option>
+                </select>
+              </div>
+
               {/* Submit */}
               <button
                 type="submit"
-                disabled={isSubmitting || !patientName.trim()}
+                disabled={isSubmitting || !patientName.trim() || !selectedService}
                 className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-[#2c8a6e] text-white rounded-lg font-semibold hover:bg-[#247a5f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
