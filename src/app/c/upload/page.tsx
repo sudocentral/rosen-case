@@ -899,7 +899,7 @@ export default function UploadPage() {
           <PatientConfirmationGate
             caseId={caseId}
             requestorName={requestorName}
-            onConfirmed={(patientName) => {
+            onConfirmed={() => {
               setPatientConfirmed(true);
             }}
           />

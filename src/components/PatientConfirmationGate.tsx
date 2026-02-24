@@ -10,6 +10,7 @@
  */
 
 import { useState } from "react";
+import { useIntakeContext } from "@/app/c/layout";
 
 const API_URL = "https://api.sudomanaged.com/api/rosen/public/client/cases";
 
@@ -26,6 +27,7 @@ export default function PatientConfirmationGate({
   requestorName,
   onConfirmed
 }: PatientConfirmationGateProps) {
+  const { setPatientName: setBannerName } = useIntakeContext();
   const [step, setStep] = useState<Step>("confirm");
   const [patientFirstName, setPatientFirstName] = useState("");
   const [patientLastName, setPatientLastName] = useState("");
@@ -128,6 +130,7 @@ export default function PatientConfirmationGate({
         console.warn("[PatientGate] case-type persist failed:", ctResponse.status);
       }
 
+      setBannerName(name);
       onConfirmed(name);
 
     } catch (err: any) {
@@ -143,6 +146,7 @@ export default function PatientConfirmationGate({
 
   function handleNo() {
     setIsRequestor(false);
+    setBannerName("Pending...");
     setStep("different_person");
   }
 

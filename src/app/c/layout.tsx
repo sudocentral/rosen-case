@@ -37,6 +37,7 @@ const STEP_ORDER = ["/c/upload", "/c/statement", "/c/verification", "/c/card"];
 // Intake context for sharing state across pages
 interface IntakeContextType {
   patientName: string | null;
+  setPatientName: (name: string | null) => void;
   caseId: string | null;
   currentStep: string | null;
   isLoading: boolean;
@@ -45,6 +46,7 @@ interface IntakeContextType {
 
 const IntakeContext = createContext<IntakeContextType>({
   patientName: null,
+  setPatientName: () => {},
   caseId: null,
   currentStep: null,
   isLoading: true,
@@ -248,7 +250,7 @@ export default function IntakeLayout({ children }: IntakeLayoutProps) {
   const isExemptPage = EXEMPT_PAGES.some(p => currentPath.startsWith(p));
 
   return (
-    <IntakeContext.Provider value={{ patientName, caseId, currentStep, isLoading: isChecking, fileCount }}>
+    <IntakeContext.Provider value={{ patientName, setPatientName, caseId, currentStep, isLoading: isChecking, fileCount }}>
       {/* C1: Patient Name Banner - show on all intake pages */}
       {!isExemptPage && (
         <div className="bg-[#1a5f7a] text-white py-2 px-4">
