@@ -7,8 +7,15 @@
  * Uses Stripe Checkout with Klarna/Afterpay options.
  */
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 
 // Minimal brand header - logo only, no navigation
 function MinimalHeader() {
@@ -30,7 +37,141 @@ function MinimalHeader() {
 
 const API_URL = "https://api.sudomanaged.com/api/payments/stripe";
 const STATUS_API = "https://api.sudomanaged.com/api/rosen/public/client/status";
+const CLIENT_API = "https://api.sudomanaged.com/api/rosen/public/client";
 const ROSEN_TENANT_ID = "25ef3af9-b575-44b8-9f84-1c118a183719";
+
+// Stripe promise cache
+let stripePromiseCache: Promise<any> | null = null;
+function getStripePromise(publishableKey: string) {
+  if (!stripePromiseCache) {
+    stripePromiseCache = loadStripe(publishableKey);
+  }
+  return stripePromiseCache;
+}
+
+// Card setup + auto-charge form for collect_letter_fee flow
+interface SetupChargeFormProps {
+  caseId: string;
+  onSuccess: () => void;
+}
+
+function SetupChargeForm({ caseId, onSuccess }: SetupChargeFormProps) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Step 1: Confirm card setup with Stripe
+      const { error: submitError, setupIntent } = await stripe.confirmSetup({
+        elements,
+        confirmParams: {
+          return_url: window.location.href,
+        },
+        redirect: "if_required",
+      });
+
+      if (submitError) {
+        setError(submitError.message || "Card verification failed");
+        setIsProcessing(false);
+        return;
+      }
+
+      if (setupIntent && setupIntent.status === "succeeded") {
+        const token = localStorage.getItem("rosen_client_token");
+
+        // Step 2: Store payment method on case
+        const confirmRes = await fetch(`${CLIENT_API}/confirm-setup`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-intake-token": token || "",
+          },
+          body: JSON.stringify({
+            setupIntentId: setupIntent.id,
+            paymentMethodId: setupIntent.payment_method,
+          }),
+        });
+
+        const confirmData = await confirmRes.json();
+        if (!confirmRes.ok || !confirmData.success) {
+          throw new Error(confirmData.error || "Failed to save payment method");
+        }
+
+        // Step 3: Auto-charge the letter fee
+        const chargeRes = await fetch(`${CLIENT_API}/cases/${caseId}/charge-letter-fee`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-intake-token": token || "",
+          },
+        });
+
+        const chargeData = await chargeRes.json();
+        if (!chargeRes.ok || !chargeData.success) {
+          throw new Error(chargeData.error || "Payment failed");
+        }
+
+        onSuccess();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <PaymentElement options={{ layout: "tabs" }} />
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-700 text-sm">{error}</p>
+        </div>
+      )}
+
+      <button
+        type="submit"
+        disabled={!stripe || !elements || isProcessing}
+        className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold text-lg transition-all ${
+          isProcessing
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+            : "bg-gradient-to-r from-[#1a5f7a] to-[#134a5f] text-white hover:shadow-xl hover:shadow-[#1a5f7a]/25"
+        }`}
+      >
+        {isProcessing ? (
+          <>
+            <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Processing Payment...
+          </>
+        ) : (
+          <>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Complete Payment
+          </>
+        )}
+      </button>
+      <p className="text-gray-500 text-xs text-center">
+        Secure payment powered by Stripe. Your information is encrypted.
+      </p>
+    </form>
+  );
+}
 
 function PaymentContent() {
   const searchParams = useSearchParams();
@@ -46,6 +187,9 @@ function PaymentContent() {
   const [error, setError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [autoChargeStatus, setAutoChargeStatus] = useState<string | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [publishableKey, setPublishableKey] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     // If ?token= URL param exists (from email link), use it as intake token
@@ -81,6 +225,25 @@ function PaymentContent() {
             if (statusData.data.status !== "collect_letter_fee") {
               router.push("/c/status");
               return;
+            }
+
+            // Fetch SetupIntent for inline card entry
+            try {
+              const setupRes = await fetch(`${CLIENT_API}/setup-intent`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-intake-token": token || "",
+                },
+                body: JSON.stringify({}),
+              });
+              const setupData = await setupRes.json();
+              if (setupRes.ok && setupData.success) {
+                setClientSecret(setupData.data.clientSecret);
+                setPublishableKey(setupData.data.publishableKey);
+              }
+            } catch {
+              // Setup intent failed — page will fall back to checkout button
             }
           }
         }
@@ -147,12 +310,39 @@ function PaymentContent() {
     }
   };
 
+  const handleChargeSuccess = useCallback(() => {
+    setSuccess(true);
+    setTimeout(() => router.push("/c/status"), 5000);
+  }, [router]);
+
   const formatAmount = (cents: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
     }).format(cents / 100);
   };
+
+  if (success) {
+    return (
+      <>
+      <MinimalHeader />
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center max-w-lg px-4">
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">Payment Complete</h1>
+          <p className="text-gray-700 mb-4">
+            Your payment has been processed successfully. A licensed physician will begin preparing your letter.
+          </p>
+          <p className="text-sm text-gray-500">Redirecting to your case status...</p>
+        </div>
+      </main>
+      </>
+    );
+  }
 
   if (loading) {
     return (
@@ -280,37 +470,57 @@ function PaymentContent() {
             )}
 
             <div className="p-8 bg-gray-50">
-              <button
-                onClick={handlePayment}
-                disabled={isRedirecting}
-                className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold text-lg transition-all ${
-                  isRedirecting
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-gradient-to-r from-[#1a5f7a] to-[#134a5f] text-white hover:shadow-xl hover:shadow-[#1a5f7a]/25"
-                }`}
-              >
-                {isRedirecting ? (
-                  <>
-                    <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Redirecting to Secure Checkout...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    {autoChargeStatus?.startsWith("failed_") || autoChargeStatus === "no_payment_method"
-                      ? "Fix Payment Method"
-                      : "Proceed to Secure Payment"}
-                  </>
-                )}
-              </button>
-              <p className="text-gray-500 text-xs text-center mt-4">
-                Secure payment powered by Stripe. Your information is encrypted.
-              </p>
+              {clientSecret && publishableKey ? (
+                <Elements
+                  stripe={getStripePromise(publishableKey)}
+                  options={{
+                    clientSecret,
+                    appearance: {
+                      theme: "stripe",
+                      variables: {
+                        colorPrimary: "#1a5f7a",
+                        borderRadius: "8px",
+                      },
+                    },
+                  }}
+                >
+                  <SetupChargeForm caseId={caseId!} onSuccess={handleChargeSuccess} />
+                </Elements>
+              ) : (
+                <>
+                  <button
+                    onClick={handlePayment}
+                    disabled={isRedirecting}
+                    className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold text-lg transition-all ${
+                      isRedirecting
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-gradient-to-r from-[#1a5f7a] to-[#134a5f] text-white hover:shadow-xl hover:shadow-[#1a5f7a]/25"
+                    }`}
+                  >
+                    {isRedirecting ? (
+                      <>
+                        <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Redirecting to Secure Checkout...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        {autoChargeStatus?.startsWith("failed_") || autoChargeStatus === "no_payment_method"
+                          ? "Fix Payment Method"
+                          : "Proceed to Secure Payment"}
+                      </>
+                    )}
+                  </button>
+                  <p className="text-gray-500 text-xs text-center mt-4">
+                    Secure payment powered by Stripe. Your information is encrypted.
+                  </p>
+                </>
+              )}
             </div>
           </div>
 
