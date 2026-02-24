@@ -241,9 +241,11 @@ function PaymentContent() {
               if (setupRes.ok && setupData.success) {
                 setClientSecret(setupData.data.clientSecret);
                 setPublishableKey(setupData.data.publishableKey);
+              } else {
+                setError("Payment setup required to proceed.");
               }
             } catch {
-              // Setup intent failed — page will fall back to checkout button
+              setError("Payment setup required to proceed.");
             }
           }
         }
@@ -470,7 +472,7 @@ function PaymentContent() {
             )}
 
             <div className="p-8 bg-gray-50">
-              {clientSecret && publishableKey ? (
+              {clientSecret && publishableKey && (
                 <Elements
                   stripe={getStripePromise(publishableKey)}
                   options={{
@@ -486,40 +488,6 @@ function PaymentContent() {
                 >
                   <SetupChargeForm caseId={caseId!} onSuccess={handleChargeSuccess} />
                 </Elements>
-              ) : (
-                <>
-                  <button
-                    onClick={handlePayment}
-                    disabled={isRedirecting}
-                    className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold text-lg transition-all ${
-                      isRedirecting
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-gradient-to-r from-[#1a5f7a] to-[#134a5f] text-white hover:shadow-xl hover:shadow-[#1a5f7a]/25"
-                    }`}
-                  >
-                    {isRedirecting ? (
-                      <>
-                        <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        Redirecting to Secure Checkout...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                        {autoChargeStatus?.startsWith("failed_") || autoChargeStatus === "no_payment_method"
-                          ? "Fix Payment Method"
-                          : "Proceed to Secure Payment"}
-                      </>
-                    )}
-                  </button>
-                  <p className="text-gray-500 text-xs text-center mt-4">
-                    Secure payment powered by Stripe. Your information is encrypted.
-                  </p>
-                </>
               )}
             </div>
           </div>
