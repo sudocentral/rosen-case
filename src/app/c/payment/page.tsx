@@ -36,6 +36,7 @@ function PaymentContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const caseIdFromUrl = searchParams.get("case");
+  const tokenFromUrl = searchParams.get("token");
   const cancelled = searchParams.get("cancelled");
 
   const [loading, setLoading] = useState(true);
@@ -47,13 +48,18 @@ function PaymentContent() {
   const [autoChargeStatus, setAutoChargeStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("rosen_client_token");
-    if (!token && !caseIdFromUrl) {
+    // If ?token= URL param exists (from email link), use it as intake token
+    const resolvedToken = tokenFromUrl || localStorage.getItem("rosen_client_token");
+    if (tokenFromUrl) {
+      // Persist URL token to localStorage for subsequent API calls (Stripe checkout etc.)
+      localStorage.setItem("rosen_client_token", tokenFromUrl);
+    }
+    if (!resolvedToken && !caseIdFromUrl) {
       router.push("/start");
       return;
     }
-    checkEligibility(token, caseIdFromUrl);
-  }, [router, caseIdFromUrl]);
+    checkEligibility(resolvedToken, caseIdFromUrl);
+  }, [router, caseIdFromUrl, tokenFromUrl]);
 
   const checkEligibility = async (token: string | null, urlCaseId: string | null) => {
     try {
