@@ -320,7 +320,7 @@ export default function CardAuthorizationPage() {
   }
 
   if (success) {
-    const isVA = serviceType === "va" || serviceType === "va-disability" || serviceType === "va_nexus";
+    const isVA = !!serviceType && serviceType.toLowerCase().startsWith("va");
     return (
       <>
         <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -435,7 +435,7 @@ export default function CardAuthorizationPage() {
             </div>
 
             {/* DBQ Add-On — VA only */}
-            {(serviceType === "va" || serviceType === "va-disability" || serviceType === "va_nexus") && (
+            {(!!serviceType && serviceType.toLowerCase().startsWith("va")) && (
               <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
                 <h3 className="font-semibold text-gray-900 mb-2">Optional: Disability Benefits Questionnaires (DBQs)</h3>
                 <div className="text-sm text-gray-600 space-y-3 mb-4">
