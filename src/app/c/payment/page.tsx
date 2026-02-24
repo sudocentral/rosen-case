@@ -4,7 +4,7 @@
  * Payment Page - F6-B
  * Handles both normal payment collection and payment repair flows
  * when case is in collect_letter_fee status.
- * Uses Stripe Checkout with Klarna/Afterpay options.
+ * Uses inline SetupIntent card form for collect_letter_fee flow.
  */
 
 import { useState, useEffect, useCallback, Suspense } from "react";
@@ -185,7 +185,6 @@ function PaymentContent() {
   const [caseStatus, setCaseStatus] = useState<string | null>(null);
   const [invoiceAmount, setInvoiceAmount] = useState<number>(100000);
   const [error, setError] = useState<string | null>(null);
-  const [isRedirecting, setIsRedirecting] = useState(false);
   const [autoChargeStatus, setAutoChargeStatus] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
@@ -195,7 +194,7 @@ function PaymentContent() {
     // If ?token= URL param exists (from email link), use it as intake token
     const resolvedToken = tokenFromUrl || localStorage.getItem("rosen_client_token");
     if (tokenFromUrl) {
-      // Persist URL token to localStorage for subsequent API calls (Stripe checkout etc.)
+      // Persist URL token to localStorage for subsequent API calls
       localStorage.setItem("rosen_client_token", tokenFromUrl);
     }
     if (!resolvedToken && !caseIdFromUrl) {
@@ -277,38 +276,6 @@ function PaymentContent() {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handlePayment = async () => {
-    if (!caseId) return;
-
-    setIsRedirecting(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`${API_URL}/case/${caseId}/checkout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-sudo-tenant-id": ROSEN_TENANT_ID,
-        },
-        body: JSON.stringify({
-          successUrl: `${window.location.origin}/pay/success?case=${caseId}&session_id={CHECKOUT_SESSION_ID}`,
-          cancelUrl: `${window.location.origin}/c/payment?case=${caseId}&cancelled=true`,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || "Could not create checkout session");
-      }
-
-      window.location.href = data.data.url;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Payment failed");
-      setIsRedirecting(false);
     }
   };
 
