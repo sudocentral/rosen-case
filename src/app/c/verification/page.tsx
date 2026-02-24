@@ -320,7 +320,8 @@ export default function CardAuthorizationPage() {
   }
 
   if (success) {
-    const isVA = !!serviceType && serviceType.toLowerCase().startsWith("va");
+    const storedService = typeof window !== "undefined" ? localStorage.getItem("rosen_selected_service") : null;
+    const isVA = (!!serviceType && serviceType.toLowerCase().startsWith("va")) || (!!storedService && storedService.toLowerCase().startsWith("va"));
     return (
       <>
         <main className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -435,7 +436,10 @@ export default function CardAuthorizationPage() {
             </div>
 
             {/* DBQ Add-On — VA only */}
-            {(!!serviceType && serviceType.toLowerCase().startsWith("va")) && (
+            {(
+              (!!serviceType && serviceType.toLowerCase().startsWith("va")) ||
+              (typeof window !== "undefined" && (localStorage.getItem("rosen_selected_service") || "").toLowerCase().startsWith("va"))
+            ) && (
               <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
                 <h3 className="font-semibold text-gray-900 mb-2">Optional: Disability Benefits Questionnaires (DBQs)</h3>
                 <div className="text-sm text-gray-600 space-y-3 mb-4">
