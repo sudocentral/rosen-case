@@ -210,6 +210,25 @@ export default function CardAuthorizationPage() {
   const [expeditedDelivery, setExpeditedDelivery] = useState<"STANDARD_7_DAYS" | "EXPEDITED_72_HOURS">("STANDARD_7_DAYS");
 
   useEffect(() => {
+    // Check if card was just submitted (survives page reload / layout redirect)
+    const submittedAt = localStorage.getItem("rosen_card_submitted");
+    if (submittedAt) {
+      const elapsed = Date.now() - parseInt(submittedAt, 10);
+      if (elapsed < 30000) {
+        // Still within the dwell window — show success screen
+        setSuccess(true);
+        setLoading(false);
+        const remaining = Math.max(2000, 10000 - elapsed);
+        setTimeout(() => {
+          localStorage.removeItem("rosen_card_submitted");
+          router.push("/c/status");
+        }, remaining);
+        return;
+      }
+      // Stale flag, clean up
+      localStorage.removeItem("rosen_card_submitted");
+    }
+
     const token = localStorage.getItem("rosen_client_token");
     const storedCaseId = localStorage.getItem("rosen_case_id");
 
@@ -293,7 +312,10 @@ export default function CardAuthorizationPage() {
   };
 
   const handleSuccess = useCallback(() => {
+    // Persist submission flag so success screen survives page reloads
+    localStorage.setItem("rosen_card_submitted", Date.now().toString());
     setSuccess(true);
+    setLoading(false);
 
     // Clear intake draft from localStorage - intake is complete
     const token = localStorage.getItem("rosen_client_token");
@@ -303,7 +325,10 @@ export default function CardAuthorizationPage() {
 
     // Sherlock already triggered at statement submission (silent, in background)
     // Just redirect to status after showing success message
-    setTimeout(() => router.push("/c/status"), 10000);
+    setTimeout(() => {
+      localStorage.removeItem("rosen_card_submitted");
+      router.push("/c/status");
+    }, 10000);
   }, [router]);
 
   if (loading) {

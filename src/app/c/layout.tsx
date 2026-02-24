@@ -119,6 +119,7 @@ export default function IntakeLayout({ children }: IntakeLayoutProps) {
           const data = await stepResponse.json();
           if (data.code === "TOKEN_EXPIRED") {
             setGuardError("Your link has expired. Please request a new one.");
+            setIsChecking(false);
             return;
           }
           setIsChecking(false);
