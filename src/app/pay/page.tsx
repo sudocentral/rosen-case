@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { trackEvent } from "@/components/Analytics";
@@ -21,6 +21,7 @@ interface EligibilityData {
 
 function PaymentContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const caseId = searchParams.get("case");
   const cancelled = searchParams.get("cancelled");
 
@@ -51,6 +52,12 @@ function PaymentContent() {
 
       if (!response.ok || !data.success) {
         throw new Error(data.error || "Could not verify payment eligibility");
+      }
+
+      // If collect_letter_fee, redirect to /c/payment which handles inline card setup
+      if (data.data.caseStatus === "collect_letter_fee") {
+        router.push(`/c/payment?case=${caseId}`);
+        return;
       }
 
       setEligibility(data.data);
