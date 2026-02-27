@@ -14,7 +14,7 @@
  * - Secure invite link via API
  */
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 // Minimal brand header - logo only, no navigation
@@ -766,6 +766,7 @@ export default function ClientStatusPage() {
   const [cases, setCases] = useState<CaseSummary[]>([]);
   const [showRoster, setShowRoster] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const isRefreshing = useRef(false);
   // Client identity (account holder / magic link owner) - distinct from patient
   const [clientName, setClientName] = useState<string | null>(null);
   // Toast notification
@@ -1012,6 +1013,46 @@ export default function ClientStatusPage() {
       setLoading(false);
     }
   };
+
+  // ================================================================
+  // Live refresh: 10s polling + visibility/focus
+  // ================================================================
+
+  const isTerminal = caseStatus
+    ? (caseStatus.client_stage === "letter_ready" ||
+       ["final_pdf_ready", "delivered", "closed"].includes(caseStatus.status))
+    : false;
+
+  // Guarded refresh — prevents overlapping fetches
+  const doRefresh = useCallback(() => {
+    if (isRefreshing.current || !token || !selectedCaseId || showRoster || error) return;
+    isRefreshing.current = true;
+    fetchStatusAndFiles(token, selectedCaseId).finally(() => {
+      isRefreshing.current = false;
+    });
+  }, [token, selectedCaseId, showRoster, error]);
+
+  // 10-second polling interval (stops on terminal status)
+  useEffect(() => {
+    if (!token || !selectedCaseId || showRoster || isTerminal || error) return;
+    const id = setInterval(doRefresh, 10_000);
+    return () => clearInterval(id);
+  }, [token, selectedCaseId, showRoster, isTerminal, error, doRefresh]);
+
+  // Visibility + focus refresh
+  useEffect(() => {
+    if (!token || !selectedCaseId || showRoster) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") doRefresh();
+    };
+    const onFocus = () => doRefresh();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [token, selectedCaseId, showRoster, doRefresh]);
 
   const copyToClipboard = () => {
     if (caseStatus?.case_id) {
