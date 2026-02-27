@@ -890,10 +890,14 @@ export default function UploadPage() {
     (dobCheckStatus === "uncertain" || dobCheckStatus === "not_found") &&
     !dobCorrected;
 
+  // Check if any existing file still requires password
+  const hasPasswordRequired = existingFiles.some(f => f.pdfRequiresPassword === true);
+
   // Gating rules for Continue button
   // MUST be SECURE_COMPLETE to continue (Sentinel validated all files)
   // MUST pass decision gate (medical records present, case type confirmed)
   // MUST pass DOB mismatch check
+  // MUST NOT have any password-required files
   const canContinue = totalUploaded > 0 &&
                       pendingCount === 0 &&
                       !isUploading &&
@@ -902,7 +906,8 @@ export default function UploadPage() {
                       sentinelPasswordFiles.length === 0 &&
                       !needsMedicalRecords &&
                       caseTypeGatePassed &&
-                      !dobMismatchBlocking;
+                      !dobMismatchBlocking &&
+                      !hasPasswordRequired;
 
   // Compute missing requirements for user feedback
   const missingRequirements: string[] = [];
@@ -910,6 +915,7 @@ export default function UploadPage() {
   if (needsMedicalRecords) missingRequirements.push("Medical records are required");
   // Case type requirement removed - auto-detect proceeds automatically
   if (dobMismatchBlocking) missingRequirements.push("Date of birth mismatch - please verify");
+  if (hasPasswordRequired) missingRequirements.push("Password required — enter a password or delete the file to continue");
 
   // Show loading while checking patient confirmation
   if (checkingPatient) {
