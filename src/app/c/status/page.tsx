@@ -825,8 +825,9 @@ export default function ClientStatusPage() {
       if (urlToken) {
         localStorage.setItem("rosen_client_token", urlToken);
         authToken = urlToken;
-        // Clean URL
-        window.history.replaceState({}, "", "/c/status");
+        // Clean URL — preserve case_id if present
+        const caseIdParam = urlParams.get("case_id");
+        window.history.replaceState({}, "", caseIdParam ? `/c/status?case_id=${caseIdParam}` : "/c/status");
       }
     }
 
@@ -895,10 +896,18 @@ export default function ClientStatusPage() {
         return;
       }
 
+      // Check for case_id in URL (e.g. from status email link)
+      const urlCaseIdParam = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("case_id") : null;
+
       if (casesList.length === 1) {
         setCases(casesList);
         setSelectedCaseId(casesList[0].case_id);
-        fetchStatusAndFiles(authToken);
+        fetchStatusAndFiles(authToken, urlCaseIdParam || undefined);
+      } else if (urlCaseIdParam) {
+        // Multi-case user with explicit case_id in URL — go directly to that case
+        setCases(casesList);
+        setSelectedCaseId(urlCaseIdParam);
+        fetchStatusAndFiles(authToken, urlCaseIdParam);
       } else {
         setCases(casesList);
         setShowRoster(true);
@@ -959,14 +968,14 @@ export default function ClientStatusPage() {
         throw new Error(statusData.error || "Could not load your case status.");
       }
 
-      // Case ID assertion: verify response matches requested case
+      // Case ID assertion: warn if response differs from request (fallback)
       const requestedCaseId = caseId || selectedCaseId;
       const returnedCaseId = statusData.data.case_id;
       if (requestedCaseId && returnedCaseId && requestedCaseId !== returnedCaseId) {
         console.error("Case mismatch: requested vs returned", { requestedCaseId, returnedCaseId });
         setCaseMismatch({ requested: requestedCaseId, returned: returnedCaseId });
-        setLoading(false);
-        return;
+      } else {
+        setCaseMismatch(null);
       }
 
       setCaseStatus(statusData.data);
@@ -1317,38 +1326,7 @@ export default function ClientStatusPage() {
     );
   }
 
-  // Case mismatch blocking error
-  if (caseMismatch) {
-    return (
-      <>
-        <MinimalHeader />
-        <main className="min-h-screen bg-gray-50">
-          <div className="max-w-xl mx-auto px-4 py-12 text-center">
-            {process.env.NODE_ENV !== "production" && (
-              <div className="mb-6 bg-red-600 text-white px-4 py-3 rounded-lg text-sm text-left font-mono">
-                <div className="font-bold mb-1">DEV DIAGNOSTIC: Case ID Mismatch</div>
-                <div>Requested: {caseMismatch.requested}</div>
-                <div>Returned: {caseMismatch.returned}</div>
-              </div>
-            )}
-            <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Case Sync Error</h1>
-            <p className="text-gray-600 mb-8">We encountered a case synchronization issue. Please refresh.</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="inline-block bg-[#1a5f7a] text-white px-6 py-3 rounded-lg font-medium hover:bg-[#134a5f] transition-colors"
-            >
-              Refresh
-            </button>
-          </div>
-        </main>
-      </>
-    );
-  }
+  // Case mismatch: handled as inline warning banner in detail view (see below)
 
   // Error state
   if (error) {
@@ -1704,38 +1682,92 @@ export default function ClientStatusPage() {
     <>
       <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-          {/* Back to all cases */}
-          {cases.length > 1 && (
-            <div className="mb-4">
-              <button
-                onClick={backToRoster}
-                className="text-sm text-[#1a5f7a] hover:underline flex items-center gap-1"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          {/* C2: Mismatch warning banner */}
+          {caseMismatch && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
-                Back to all cases
-              </button>
+                <div>
+                  <p className="text-sm font-medium text-red-800">
+                    That case isn&apos;t accessible from this link. Showing your most recent case instead.
+                  </p>
+                  <p className="text-xs text-red-600 mt-1">
+                    Viewing case <code className="font-mono bg-red-100 px-1 rounded">{caseMismatch.returned.slice(0, 8)}</code>
+                  </p>
+                </div>
+              </div>
             </div>
           )}
+
+          {/* C1: Case identity banner */}
+          <div className="mb-6 bg-white border border-gray-200 rounded-xl px-5 py-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 bg-[#1a5f7a]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-[#1a5f7a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-semibold text-gray-900">
+                      {(() => {
+                        const selectedCase = cases.find(c => c.case_id === selectedCaseId);
+                        return selectedCase?.patient_name || caseStatus.customer_name || "Your Case";
+                      })()}
+                    </span>
+                    <code className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                      {caseStatus.case_id.slice(0, 8)}
+                    </code>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Submitted {new Date(caseStatus.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}
+                  </p>
+                </div>
+              </div>
+              {/* C3: Case switcher dropdown */}
+              {cases.length > 1 && (
+                <div className="relative flex items-center gap-2 flex-shrink-0">
+                  <select
+                    value={selectedCaseId || ""}
+                    onChange={(e) => { if (e.target.value) selectCase(e.target.value); }}
+                    className="appearance-none text-xs bg-gray-50 border border-gray-200 rounded-lg pl-3 pr-8 py-2 text-gray-700 font-medium cursor-pointer hover:bg-gray-100 focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent"
+                  >
+                    {cases
+                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                      .slice(0, 10)
+                      .map((c) => {
+                        const name = c.patient_name || c.requestor_name || "Patient";
+                        const statusLabel = getRosterStatusLabel(c.status).label;
+                        const dateStr = new Date(c.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                        return (
+                          <option key={c.case_id} value={c.case_id}>
+                            {dateStr} - {statusLabel} - {name} ({c.case_id.slice(0, 8)})
+                          </option>
+                        );
+                      })}
+                  </select>
+                  <svg className="w-4 h-4 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  <button
+                    onClick={backToRoster}
+                    className="text-xs text-[#1a5f7a] hover:underline whitespace-nowrap"
+                  >
+                    View all cases
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Header */}
           <div className="mb-8">
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
               {clientName ? `Welcome back, ${clientName.split(" ")[0]}` : "Welcome back"}
             </h1>
-            {(() => {
-              const selectedCase = cases.find(c => c.case_id === selectedCaseId);
-              const patientName = selectedCase?.patient_name || caseStatus.customer_name;
-              if (patientName && patientName !== clientName) {
-                return (
-                  <p className="text-sm text-gray-500 mb-1">
-                    Patient: <span className="font-medium text-gray-700">{patientName}</span>
-                  </p>
-                );
-              }
-              return null;
-            })()}
             <p className="text-gray-600">Track your case progress and manage your documents</p>
             {(caseStatus.status === "intake_in_progress" || caseStatus.determination === "NEEDS_MORE_INFO") && (
               <div className="mt-3 flex flex-wrap items-center gap-4">
