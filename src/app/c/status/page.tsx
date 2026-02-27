@@ -92,7 +92,7 @@ function getStatusPriority(c: CaseSummary): number {
   if (c.ai_decision === "NEEDS_MORE_INFO" || c.status === "needs_password") {
     return 2;
   }
-  if (["ai_review", "qa_review", "intake_submitted", "physician_review"].includes(c.status)) {
+  if (["ai_review", "qa_review", "intake_submitted", "gatekeeper_pass", "free_narrative_queued", "free_narrative_ready", "physician_review", "ai_draft_ready", "paid_review", "qc_required", "records_requested", "records_received", "redaction_complete"].includes(c.status)) {
     return 3;
   }
   // 3. Payment required
@@ -116,10 +116,19 @@ function getRosterStatusLabel(status: string): { label: string; color: string } 
   const statusMap: Record<string, { label: string; color: string }> = {
     intake_in_progress: { label: "Intake In Progress", color: "bg-yellow-100 text-yellow-800" },
     intake_submitted: { label: "Under Review", color: "bg-blue-100 text-blue-800" },
+    gatekeeper_pass: { label: "Under Review", color: "bg-blue-100 text-blue-800" },
+    free_narrative_queued: { label: "Under Review", color: "bg-blue-100 text-blue-800" },
+    free_narrative_ready: { label: "Under Review", color: "bg-blue-100 text-blue-800" },
     ai_review: { label: "Under Review", color: "bg-blue-100 text-blue-800" },
     qa_review: { label: "Under Review", color: "bg-blue-100 text-blue-800" },
     collect_letter_fee: { label: "Payment Required", color: "bg-orange-100 text-orange-800" },
     paid_letter_fee: { label: "Processing", color: "bg-blue-100 text-blue-800" },
+    records_requested: { label: "Processing", color: "bg-blue-100 text-blue-800" },
+    records_received: { label: "Processing", color: "bg-blue-100 text-blue-800" },
+    redaction_complete: { label: "Processing", color: "bg-blue-100 text-blue-800" },
+    ai_draft_ready: { label: "Physician Review", color: "bg-purple-100 text-purple-800" },
+    paid_review: { label: "Physician Review", color: "bg-purple-100 text-purple-800" },
+    qc_required: { label: "Physician Review", color: "bg-purple-100 text-purple-800" },
     physician_review: { label: "Physician Review", color: "bg-purple-100 text-purple-800" },
     final_pdf_ready: { label: "Letter Ready", color: "bg-green-100 text-green-800" },
     letter_ready: { label: "Letter Ready", color: "bg-green-100 text-green-800" },
@@ -217,9 +226,9 @@ const PROGRESS_STAGES = [
 
 function getStageFromStatus(status: string, determination: string | null): number {
   if (["delivered", "letter_ready", "final_pdf_ready"].includes(status)) return 4;
-  if (["physician_review", "paid_letter_fee"].includes(status)) return 3;
+  if (["physician_review", "paid_letter_fee", "ai_draft_ready", "paid_review", "qc_required", "records_requested", "records_received", "redaction_complete"].includes(status)) return 3;
   if (determination) return 2;
-  if (["intake_submitted", "ai_review", "qa_review"].includes(status)) return 1;
+  if (["intake_submitted", "gatekeeper_pass", "free_narrative_queued", "free_narrative_ready", "ai_review", "qa_review"].includes(status)) return 1;
   return 0;
 }
 
@@ -1132,15 +1141,25 @@ export default function ClientStatusPage() {
     const configs: Record<string, { bg: string; text: string; label: string }> = {
       intake_in_progress: { bg: "bg-blue-100", text: "text-blue-800", label: "Intake In Progress" },
       intake_submitted: { bg: "bg-purple-100", text: "text-purple-800", label: "Records Submitted" },
+      gatekeeper_pass: { bg: "bg-indigo-100", text: "text-indigo-800", label: "Under Review" },
+      free_narrative_queued: { bg: "bg-indigo-100", text: "text-indigo-800", label: "Under Review" },
+      free_narrative_ready: { bg: "bg-indigo-100", text: "text-indigo-800", label: "Under Review" },
       ai_review: { bg: "bg-indigo-100", text: "text-indigo-800", label: "Under Review" },
       qa_review: { bg: "bg-indigo-100", text: "text-indigo-800", label: "Under Review" },
       collect_letter_fee: { bg: "bg-amber-100", text: "text-amber-800", label: "Payment Needed" },
       paid_letter_fee: { bg: "bg-emerald-100", text: "text-emerald-800", label: "Payment Received" },
+      records_requested: { bg: "bg-emerald-100", text: "text-emerald-800", label: "Processing" },
+      records_received: { bg: "bg-emerald-100", text: "text-emerald-800", label: "Processing" },
+      redaction_complete: { bg: "bg-emerald-100", text: "text-emerald-800", label: "Processing" },
+      ai_draft_ready: { bg: "bg-teal-100", text: "text-teal-800", label: "Physician Drafting" },
+      paid_review: { bg: "bg-teal-100", text: "text-teal-800", label: "Physician Drafting" },
+      qc_required: { bg: "bg-teal-100", text: "text-teal-800", label: "Physician Drafting" },
       physician_review: { bg: "bg-teal-100", text: "text-teal-800", label: "Physician Drafting" },
       final_pdf_ready: { bg: "bg-green-100", text: "text-green-800", label: "Letter Ready" },
       letter_ready: { bg: "bg-green-100", text: "text-green-800", label: "Letter Ready" },
       delivered: { bg: "bg-green-100", text: "text-green-800", label: "Delivered" },
       closed: { bg: "bg-gray-100", text: "text-gray-800", label: "Closed" },
+      needs_password: { bg: "bg-amber-100", text: "text-amber-800", label: "Needs Password" },
     };
     return configs[status] || { bg: "bg-gray-100", text: "text-gray-800", label: status };
   };
@@ -1159,7 +1178,7 @@ export default function ClientStatusPage() {
       };
     }
 
-    if (status === "physician_review" || status === "paid_letter_fee") {
+    if (["physician_review", "paid_letter_fee", "ai_draft_ready", "paid_review", "qc_required", "records_requested", "records_received", "redaction_complete"].includes(status)) {
       const serviceType = getServiceTypeLabel(caseStatus.claim_type ?? null);
       return {
         type: "progress",
