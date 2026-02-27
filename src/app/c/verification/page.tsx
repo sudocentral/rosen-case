@@ -1,15 +1,15 @@
 "use client";
 
 /**
- * Card Authorization Page - F6-B
- * Collects card via Stripe SetupIntent for auto-charge on qualification.
- * User is NOT charged at this step.
+ * Add-Ons & Card Verification Page - F6-B
+ * Step 1: Choose optional add-ons (DBQs, expedited delivery)
+ * Step 2: Card verification via Stripe SetupIntent ($1 temporary hold)
  *
  * Draft Caching (P0 UX Safety):
  * - Clears intake draft from localStorage on successful submission
  */
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -19,6 +19,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import IntakeStepper from "@/components/IntakeStepper";
+import { PageListenButton } from "@/ui/ListenButton";
 
 // Minimal brand header - logo only, no navigation
 function MinimalHeader() {
@@ -61,25 +62,53 @@ function getStripePromise(publishableKey: string) {
   return stripePromiseCache;
 }
 
+// Listen script for verification page
+const verificationScript = `
+On this page, you can choose optional add-ons like Disability Benefits Questionnaires or expedited delivery. These are completely optional. You can submit for a free review without selecting any.
+
+Below the add-ons, you will enter your card for a temporary one dollar verification hold. This hold drops off automatically and is never a permanent charge.
+
+We review your medical records at no cost. If your case qualifies, we charge one thousand dollars and a licensed physician begins writing your physician-authored medical opinion. If your case does not qualify, you are not charged.
+
+We require card verification to prevent abuse of the free review and to protect physician time. Your information is encrypted and secure.
+`.trim();
+
 interface SetupFormProps {
   clientSecret: string;
   caseId: string;
   onSuccess: () => void;
   dbqCount: number;
+  dbqConditions: string[];
+  onNeedConditions: () => void;
+  submitTrigger: number;
   physicianStatementRequested: boolean;
   expeditedDelivery: "STANDARD_7_DAYS" | "EXPEDITED_72_HOURS";
 }
 
-function SetupForm({ clientSecret, caseId, onSuccess, dbqCount, physicianStatementRequested, expeditedDelivery }: SetupFormProps) {
+function SetupForm({ clientSecret, caseId, onSuccess, dbqCount, dbqConditions, onNeedConditions, submitTrigger, physicianStatementRequested, expeditedDelivery }: SetupFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [agreed, setAgreed] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Auto-submit when conditions modal Continue is clicked
+  useEffect(() => {
+    if (submitTrigger > 0) {
+      formRef.current?.requestSubmit();
+    }
+  }, [submitTrigger]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stripe || !elements || !agreed) return;
+
+    // DBQ conditions gate: if user selected DBQs but hasn't listed conditions yet
+    if (dbqCount > 0 && dbqConditions.filter(c => c?.trim()).length < dbqCount) {
+      onNeedConditions();
+      return;
+    }
 
     setIsProcessing(true);
     setError(null);
@@ -112,8 +141,13 @@ function SetupForm({ clientSecret, caseId, onSuccess, dbqCount, physicianStateme
             setupIntentId: setupIntent.id,
             paymentMethodId: setupIntent.payment_method,
             dbq_count: dbqCount,
+            dbq_conditions: dbqConditions.slice(0, dbqCount),
             physician_statement_requested: physicianStatementRequested,
             expedited_delivery: expeditedDelivery,
+            expedited_option: expeditedDelivery,
+            card_notice_accepted: true,
+            card_notice_accepted_at: new Date().toISOString(),
+            non_refundable_acknowledged: true,
           }),
         });
 
@@ -132,7 +166,7 @@ function SetupForm({ clientSecret, caseId, onSuccess, dbqCount, physicianStateme
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <PaymentElement
           options={{
@@ -150,11 +184,7 @@ function SetupForm({ clientSecret, caseId, onSuccess, dbqCount, physicianStateme
           className="mt-1 w-5 h-5 rounded border-gray-300 text-[#1a5f7a] focus:ring-[#1a5f7a]"
         />
         <span className="text-sm text-gray-700">
-          I agree to the{" "}
-          <a href="/terms" className="text-[#1a5f7a] underline" target="_blank">
-            Terms of Service
-          </a>{" "}
-          and understand that a temporary $1.00 hold will be placed on my card and released automatically. I will only be charged if my case qualifies for a physician-authored letter.
+          I authorize a temporary $1.00 card verification charge today (this will drop off). If I qualify after review, I authorize Sudo Central to charge $1,000 for the physician-authored medical opinion, plus any add-ons I selected. If I do not qualify, I will not be charged for any add-ons. I understand all services are non-refundable once approved and processing begins.
         </span>
       </label>
 
@@ -205,11 +235,16 @@ export default function CardAuthorizationPage() {
   const [success, setSuccess] = useState(false);
   const [serviceType, setServiceType] = useState<string | null>(null);
   const [dbqCount, setDbqCount] = useState(0);
+  const [dbqConditions, setDbqConditions] = useState<string[]>([]);
   const [showDbqInfo, setShowDbqInfo] = useState(false);
+  const [showConditionsModal, setShowConditionsModal] = useState(false);
+  const [submitTrigger, setSubmitTrigger] = useState(0);
   const [physicianStatementRequested, setPhysicianStatementRequested] = useState(false);
   const [expeditedDelivery, setExpeditedDelivery] = useState<"STANDARD_7_DAYS" | "EXPEDITED_72_HOURS">("STANDARD_7_DAYS");
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+
     // Check if card was just submitted (survives page reload / layout redirect)
     const submittedAt = localStorage.getItem("rosen_card_submitted");
     if (submittedAt) {
@@ -371,8 +406,8 @@ export default function CardAuthorizationPage() {
                   <span className="font-semibold text-blue-600 flex-shrink-0">2.</span>
                   <span>
                     {isVA
-                      ? "If your case qualifies, we charge $1,000 and a physician begins your Nexus Letter."
-                      : "If your case qualifies, we charge $1,000 and a physician begins your Independent Medical Opinion."}
+                      ? "If your case qualifies, we charge $1,000 plus any selected add-ons, and a physician begins your physician-authored medical opinion."
+                      : "If your case qualifies, we charge $1,000 plus any selected add-ons, and a physician begins your physician-authored medical opinion."}
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -411,6 +446,9 @@ export default function CardAuthorizationPage() {
     );
   }
 
+  const isVA = (!!serviceType && serviceType.toLowerCase().startsWith("va")) ||
+    (typeof window !== "undefined" && (localStorage.getItem("rosen_selected_service") || "").toLowerCase().startsWith("va"));
+
   return (
     <>
       <main className="min-h-screen bg-gray-50">
@@ -418,6 +456,12 @@ export default function CardAuthorizationPage() {
           <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <IntakeStepper currentStep="verification" />
 
+            {/* Listen button */}
+            <div className="flex justify-center mb-6">
+              <PageListenButton pageText={verificationScript} />
+            </div>
+
+            {/* Hero - Add-Ons first */}
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -426,47 +470,17 @@ export default function CardAuthorizationPage() {
                 Free Review
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
-                Complete Your Free Records Review
+                Choose Optional Add-Ons (DBQs / Expedited)
               </h1>
               <p className="text-gray-600">
-                We review your records at no cost. A temporary $1.00 hold verifies your card and is released automatically. Most cases do not qualify. You are only charged if yours does.
-              </p>
-            </div>
-
-            {/* Info card */}
-            <div className="bg-blue-50 rounded-xl p-6 mb-8">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-blue-900 mb-1">How it works</h3>
-                  <ul className="text-blue-800 text-sm space-y-1">
-                    <li>A $1.00 hold confirms your card is valid. It is released automatically.</li>
-                    <li>We review your records for free. Most cases do not qualify.</li>
-                    <li>If your case qualifies, we charge $1,000 and a physician begins your letter.</li>
-                    <li>If your case does not qualify, you pay nothing.</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Why we verify */}
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8">
-              <p className="text-amber-800 text-sm">
-                <strong>Why the $1.00 hold?</strong> The free review requires physician time. The hold helps us prioritize serious inquiries and is released automatically. You are never charged unless your case qualifies.
+                These are optional. Selecting none is fine. You can submit for free review with no add-ons.
               </p>
             </div>
 
             {/* DBQ Add-On — VA only */}
-            {(
-              (!!serviceType && serviceType.toLowerCase().startsWith("va")) ||
-              (typeof window !== "undefined" && (localStorage.getItem("rosen_selected_service") || "").toLowerCase().startsWith("va"))
-            ) && (
+            {isVA && (
               <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
-                <h3 className="font-semibold text-gray-900 mb-2">Optional: Disability Benefits Questionnaires (DBQs)</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">Disability Benefits Questionnaires (DBQs)</h3>
                 <div className="text-sm text-gray-600 space-y-3 mb-4">
                   <p>
                     A Disability Benefits Questionnaire (DBQ) is a VA-recognized medical form used to document the diagnosis, severity, symptoms, and functional impact of a specific medical condition for disability compensation purposes.
@@ -543,6 +557,36 @@ export default function CardAuthorizationPage() {
               </div>
             </div>
 
+            {/* Card Verification Section */}
+            <div className="mb-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-2">
+                Card Verification (Temporary $1 Hold)
+              </h2>
+              <p className="text-gray-600 text-sm">
+                A temporary $1.00 hold verifies your card is valid. It is released automatically. You are only charged if your case qualifies.
+              </p>
+            </div>
+
+            {/* How it works */}
+            <div className="bg-blue-50 rounded-xl p-6 mb-8">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-blue-900 mb-1">How it works</h3>
+                  <ul className="text-blue-800 text-sm space-y-1">
+                    <li>A $1.00 hold confirms your card is valid. It is released automatically.</li>
+                    <li>We review your records for free. Most cases do not qualify.</li>
+                    <li>If your case qualifies, we charge $1,000 plus any selected add-ons, and a physician begins your medical opinion.</li>
+                    <li>If your case does not qualify, you pay nothing.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
             {clientSecret && caseId && publishableKey ? (
               <Elements
                 stripe={getStripePromise(publishableKey)}
@@ -562,6 +606,9 @@ export default function CardAuthorizationPage() {
                   caseId={caseId}
                   onSuccess={handleSuccess}
                   dbqCount={dbqCount}
+                  dbqConditions={dbqConditions}
+                  onNeedConditions={() => setShowConditionsModal(true)}
+                  submitTrigger={submitTrigger}
                   physicianStatementRequested={physicianStatementRequested}
                   expeditedDelivery={expeditedDelivery}
                 />
@@ -571,6 +618,56 @@ export default function CardAuthorizationPage() {
                 <p className="text-gray-600">Loading card form...</p>
               </div>
             )}
+
+            {/* DBQ Conditions Modal */}
+      {showConditionsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowConditionsModal(false)}>
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900">List the Conditions for Each DBQ</h2>
+              <button onClick={() => setShowConditionsModal(false)} className="text-gray-400 hover:text-gray-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">Enter the medical condition for each DBQ you requested.</p>
+            <div className="space-y-4">
+              {Array.from({ length: dbqCount }, (_, i) => (
+                <div key={i}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">DBQ #{i + 1} condition</label>
+                  <input
+                    type="text"
+                    value={dbqConditions[i] || ""}
+                    onChange={(e) => {
+                      const updated = [...dbqConditions];
+                      updated[i] = e.target.value;
+                      setDbqConditions(updated);
+                    }}
+                    placeholder="e.g., PTSD, lower back condition, migraines"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent outline-none"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setShowConditionsModal(false)}
+                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowConditionsModal(false); setSubmitTrigger(t => t + 1); }}
+                disabled={Array.from({ length: dbqCount }, (_, i) => dbqConditions[i]).some(c => !c?.trim())}
+                className="flex-1 px-4 py-2.5 bg-[#1a5f7a] text-white rounded-lg font-medium hover:bg-[#134a5f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
             {/* DBQ Info Modal */}
       {showDbqInfo && (
@@ -626,10 +723,10 @@ export default function CardAuthorizationPage() {
               <hr className="border-gray-200" />
 
               <div>
-                <h3 className="font-bold text-gray-900 mb-2">DBQ vs. Nexus Opinion</h3>
+                <h3 className="font-bold text-gray-900 mb-2">DBQ vs. Medical Opinion</h3>
                 <ul className="space-y-2">
                   <li><span className="font-semibold">A DBQ</span> documents severity for rating purposes.</li>
-                  <li><span className="font-semibold">A Nexus Opinion</span> establishes service connection between your condition and military service.</li>
+                  <li><span className="font-semibold">A Medical Opinion</span> establishes service connection between your condition and military service.</li>
                 </ul>
                 <p className="mt-2">Some cases benefit from one. Some benefit from both.</p>
                 <p className="font-semibold text-gray-900 mt-1">We determine this during your medical review.</p>
