@@ -1524,9 +1524,11 @@ export default function UploadPage() {
                       setPasswordError("");
                       setRemovedProtectedBanner("Protected files removed. You can continue.");
                       setRemovingProtectedFiles(false);
-                      if (!securingFiles) {
-                        runSentinelPostprocess();
-                      }
+                      // Set secureComplete directly — do NOT re-call postprocess
+                      // because backend may still see the encrypted file and return
+                      // NEEDS_PASSWORD, which would re-open this modal
+                      setSecureComplete(true);
+                      setSecuringFiles(false);
                     }}
                     disabled={removingProtectedFiles}
                     className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
