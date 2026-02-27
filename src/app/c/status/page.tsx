@@ -1228,6 +1228,16 @@ export default function ClientStatusPage() {
       };
     }
 
+    // client_stage needs_more_info: from QA override decision (manual pipeline)
+    if (caseStatus.client_stage === "needs_more_info") {
+      return {
+        type: "action",
+        title: "We Need More Information",
+        message: needs_more_info_message || "We need additional documentation to continue reviewing your case.",
+        action: { label: "Upload Additional Records", href: "/c/upload" },
+      };
+    }
+
     if (determination === "NEEDS_MORE_INFO") {
       return {
         type: "action",
@@ -1862,6 +1872,35 @@ export default function ClientStatusPage() {
                       </div>
                     </>
                   )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Needs More Info Banner (from client_stage, independent of determination) */}
+          {caseStatus.client_stage === "needs_more_info" && !(caseStatus.determination_visible && caseStatus.determination === "NEEDS_MORE_INFO") && (
+            <div className="mb-6 rounded-xl shadow-md overflow-hidden bg-gradient-to-r from-amber-500 to-orange-500">
+              <div className="px-4 py-5 sm:px-6 sm:py-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-bold text-white">We Need More Information</h2>
+                    <p className="text-sm sm:text-base text-white/90">
+                      {caseStatus.needs_more_info_message || "Please upload additional documentation so we can continue your review."}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <a
+                    href="/c/upload"
+                    className="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-medium rounded-lg transition-colors text-sm"
+                  >
+                    Upload Additional Records
+                  </a>
                 </div>
               </div>
             </div>
