@@ -32,6 +32,7 @@ export default function LandingPage() {
   const [success, setSuccess] = useState(false);
   const [successType, setSuccessType] = useState<"new" | "login">("new");
   const [error, setError] = useState("");
+  const [selectedService, setSelectedService] = useState("va");
 
   // Format phone as (XXX) XXX-XXXX while typing
   function formatPhoneInput(value: string): string {
@@ -90,6 +91,7 @@ export default function LandingPage() {
           phone: phoneDigits(phone),
           name: name.trim(),
           source: "case_landing",
+          service: selectedService,
         }),
       });
 
@@ -104,6 +106,7 @@ export default function LandingPage() {
       }
       setSuccessType("new");
       setSuccess(true);
+      localStorage.setItem("rosen_selected_service", selectedService);
     } catch (err) {
       setError(err instanceof Error ? err.message : "We couldn't send the link. Please double-check your information and try again.");
     } finally {
@@ -251,6 +254,22 @@ export default function LandingPage() {
                 placeholder="your@email.com"
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent outline-none"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Case Type <span className="text-red-500">*</span></label>
+              <select
+                required
+                value={selectedService}
+                onChange={(e) => setSelectedService(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent outline-none bg-white"
+              >
+                <option value="va">VA Disability</option>
+                <option value="ssdi">SSDI</option>
+                <option value="insurance">Insurance Denial</option>
+                <option value="malpractice">Medical Malpractice</option>
+                <option value="second-opinion">Second Opinion</option>
+              </select>
             </div>
 
             {error && <p className="text-red-600 text-sm">{error}</p>}

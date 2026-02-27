@@ -130,6 +130,10 @@ export default function PatientConfirmationGate({
         console.warn("[PatientGate] case-type persist failed:", ctResponse.status);
       }
 
+      // Belt-and-suspenders: persist to localStorage so verification page
+      // can resolve service type even if the API call above failed
+      localStorage.setItem("rosen_selected_service", caseType.toLowerCase());
+
       setBannerName(name);
       onConfirmed(name);
 
