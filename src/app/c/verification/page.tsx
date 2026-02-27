@@ -184,7 +184,18 @@ function SetupForm({ clientSecret, caseId, onSuccess, dbqCount, dbqConditions, o
           className="mt-1 w-5 h-5 rounded border-gray-300 text-[#1a5f7a] focus:ring-[#1a5f7a]"
         />
         <span className="text-sm text-gray-700">
-          I authorize a temporary $1.00 card verification charge today (this will drop off). If I qualify after review, I authorize Sudo Central to charge $1,000 for the physician-authored medical opinion, plus any add-ons I selected. If I do not qualify, I will not be charged for any add-ons. I understand all services are non-refundable once approved and processing begins.
+          {(() => {
+            const baseCents = 100000;
+            const dbqCents = dbqCount * 19900;
+            const expeditedCents = expeditedDelivery === "EXPEDITED_72_HOURS" ? 40000 : 0;
+            const totalCents = baseCents + dbqCents + expeditedCents;
+            const totalStr = `$${(totalCents / 100).toLocaleString()}`;
+            const parts = ["IMO $1,000"];
+            if (dbqCount > 0) parts.push(`${dbqCount} DBQ${dbqCount > 1 ? "s" : ""}`);
+            if (expeditedCents > 0) parts.push("Expedited 72 hours");
+            const breakdown = totalCents > baseCents ? ` (${parts.join(" + ")})` : "";
+            return `I authorize a temporary $1.00 card verification charge today (this will drop off). If I qualify after review, I authorize Sudo Central to charge ${totalStr} total${breakdown} for the physician-authored medical opinion. If I do not qualify, I will not be charged. I understand all services are non-refundable once approved and processing begins.`;
+          })()}
         </span>
       </label>
 
@@ -577,12 +588,25 @@ export default function CardAuthorizationPage() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-blue-900 mb-1">How it works</h3>
-                  <ul className="text-blue-800 text-sm space-y-1">
-                    <li>A $1.00 hold confirms your card is valid. It is released automatically.</li>
-                    <li>We review your records for free. Most cases do not qualify.</li>
-                    <li>If your case qualifies, we charge $1,000 plus any selected add-ons, and a physician begins your medical opinion.</li>
-                    <li>If your case does not qualify, you pay nothing.</li>
-                  </ul>
+                  {(() => {
+                    const baseCents = 100000;
+                    const dbqCents = dbqCount * 19900;
+                    const expeditedCents = expeditedDelivery === "EXPEDITED_72_HOURS" ? 40000 : 0;
+                    const totalCents = baseCents + dbqCents + expeditedCents;
+                    const totalStr = `$${(totalCents / 100).toLocaleString()}`;
+                    const parts = ["IMO $1,000"];
+                    if (dbqCount > 0) parts.push(`${dbqCount} DBQ${dbqCount > 1 ? "s" : ""}`);
+                    if (expeditedCents > 0) parts.push("Expedited 72 hours");
+                    const breakdown = totalCents > baseCents ? ` (${parts.join(" + ")})` : "";
+                    return (
+                      <ul className="text-blue-800 text-sm space-y-1">
+                        <li>A $1.00 hold confirms your card is valid. It is released automatically.</li>
+                        <li>We review your records for free. Most cases do not qualify.</li>
+                        <li>If your case qualifies, we charge <strong>{totalStr} total{breakdown}</strong>, and a physician begins your medical opinion.</li>
+                        <li>If your case does not qualify, you pay nothing.</li>
+                      </ul>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
