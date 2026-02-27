@@ -68,6 +68,8 @@ export default function UploadPage() {
   const [passwordInput, setPasswordInput] = useState("");
   const [passwordSubmitting, setPasswordSubmitting] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+  const [passwordAttempts, setPasswordAttempts] = useState(0);
+  const [removedProtectedBanner, setRemovedProtectedBanner] = useState("");
   const [isDecrypting, setIsDecrypting] = useState(false);
 
   // Sentinel postprocess state (SECURING_FILES flow)
@@ -440,6 +442,7 @@ export default function UploadPage() {
     setPasswordModalFile(file);
     setPasswordInput("");
     setPasswordError("");
+    setPasswordAttempts(0);
   };
 
   // Submit password for encrypted PDF
@@ -484,7 +487,23 @@ export default function UploadPage() {
         setPasswordModalFile(null);
         setPasswordInput("");
       } else {
-        setPasswordError(data.error || "Invalid password. Please try again.");
+        const attempts = passwordAttempts + 1;
+        setPasswordAttempts(attempts);
+        if (attempts >= 2) {
+          // Max retries reached — remove the file and close modal
+          if (passwordModalFile) {
+            await excludeExistingFile(passwordModalFile.id);
+          }
+          setPasswordModalFile(null);
+          setPasswordInput("");
+          setPasswordError("");
+          setPasswordAttempts(0);
+          setRemovedProtectedBanner("Password-protected files were removed. Re-upload them without a password if you want us to process them.");
+          // Re-run sentinel on remaining files
+          runSentinelPostprocess();
+        } else {
+          setPasswordError(data.error || `Invalid password. ${2 - attempts} attempt${2 - attempts > 1 ? "s" : ""} remaining.`);
+        }
       }
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") {
@@ -1122,6 +1141,24 @@ export default function UploadPage() {
                   </div>
                 )}
 
+                {/* Removal banner for password-protected files */}
+                {removedProtectedBanner && !securingFiles && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+                    <svg className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm text-amber-800">{removedProtectedBanner}</p>
+                      <button
+                        onClick={() => setRemovedProtectedBanner("")}
+                        className="mt-2 text-xs text-gray-500 hover:underline"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Sentinel error - calm message with retry option */}
                 {sentinelError && !securingFiles && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
@@ -1363,11 +1400,21 @@ export default function UploadPage() {
 
                 <div className="flex gap-3">
                   <button
-                    onClick={() => setPasswordModalFile(null)}
+                    onClick={async () => {
+                      if (passwordModalFile) {
+                        await excludeExistingFile(passwordModalFile.id);
+                      }
+                      setPasswordModalFile(null);
+                      setPasswordInput("");
+                      setPasswordError("");
+                      setPasswordAttempts(0);
+                      setRemovedProtectedBanner("Password-protected files were removed. Re-upload them without a password if you want us to process them.");
+                      runSentinelPostprocess();
+                    }}
                     disabled={passwordSubmitting}
                     className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Skip for Now
+                    Remove File
                   </button>
                   <button
                     onClick={submitPassword}
@@ -1448,17 +1495,24 @@ export default function UploadPage() {
 
                 <div className="flex gap-3">
                   <button
-                    onClick={() => {
-                      // Close modal but show guidance - user can't proceed without password
+                    onClick={async () => {
+                      // Remove password-protected files from case, keep others
+                      const protectedNames = sentinelPasswordFiles.map(f => f.filename);
+                      for (const ef of existingFiles) {
+                        if (protectedNames.some(pn => ef.filename === pn || ef.filename.includes(pn))) {
+                          await excludeExistingFile(ef.id);
+                        }
+                      }
                       setSentinelPasswordFiles([]);
                       setSentinelPasswords({});
-                      // Set informative error with file names
-                      const fileNames = sentinelPasswordFiles.map(f => f.filename).join(", ");
-                      setSentinelError(`We need the password for: ${fileNames}. Remove the ZIP file below and upload unencrypted files instead, or click "Try again" to enter the password.`);
+                      setSentinelError("");
+                      setRemovedProtectedBanner("Password-protected files were removed. Re-upload them without a password if you want us to process them.");
+                      // Re-run sentinel on remaining files
+                      runSentinelPostprocess();
                     }}
                     className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >
-                    Cancel
+                    Remove Protected Files
                   </button>
                   <button
                     onClick={submitSentinelPasswords}
