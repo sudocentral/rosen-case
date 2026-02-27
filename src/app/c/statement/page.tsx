@@ -117,6 +117,7 @@ export default function StatementPage() {
   const [error, setError] = useState("");
   const [charCount, setCharCount] = useState(0);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [tosAccepted, setTosAccepted] = useState(false);
   const [isLoadingApi, setIsLoadingApi] = useState(true);
 
   const MIN_STATEMENT_LENGTH = 100;
@@ -222,6 +223,10 @@ export default function StatementPage() {
       return `Your statement should be at least ${MIN_STATEMENT_LENGTH} characters. Please provide more detail about your condition and how it affects you.`;
     }
 
+    if (!tosAccepted) {
+      return "You must agree to the Terms of Service to continue.";
+    }
+
     return null;
   };
 
@@ -247,6 +252,8 @@ export default function StatementPage() {
         body: JSON.stringify({
           // DOB is now fetched from case record on backend
           client_statement: statement.trim(),
+          tos_accepted: true,
+          tos_accepted_at: new Date().toISOString(),
         }),
       });
 
@@ -398,10 +405,27 @@ export default function StatementPage() {
                 </div>
               </div>
 
+              {/* Terms of Service acceptance */}
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={tosAccepted}
+                  onChange={(e) => setTosAccepted(e.target.checked)}
+                  className="mt-1 w-5 h-5 rounded border-gray-300 text-[#1a5f7a] focus:ring-[#1a5f7a]"
+                />
+                <span className="text-sm text-gray-700">
+                  <span className="text-red-500 font-bold">*</span>{" "}
+                  I have read and agree to the{" "}
+                  <a href="/terms" className="text-[#1a5f7a] underline" target="_blank">
+                    Terms of Service
+                  </a>.
+                </span>
+              </label>
+
               {/* Submit button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !tosAccepted}
                 className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-[#1a5f7a] text-white rounded-lg font-semibold hover:bg-[#134a5f] transition-colors min-h-[56px] text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
@@ -422,9 +446,7 @@ export default function StatementPage() {
                 )}
               </button>
 
-              <p className="text-center text-gray-500 text-sm">
-                You will not be charged unless your case qualifies.
-              </p>
+
             </form>
           </div>
         </section>
