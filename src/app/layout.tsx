@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://case.rosenexperts.com"),
   title: "Free Medical Records Review | Same-Day Determination | Rosen Experts",
   description: "Get your medical records reviewed free by licensed physicians. Same-day determination for VA disability, SSDI, insurance denials, and more. No obligation.",
-  keywords: ["medical records review", "VA disability", "nexus letter", "physician opinion letter", "SSDI", "disability benefits"],
+  keywords: ["medical records review", "VA disability", "physician-authored medical opinion", "physician opinion letter", "SSDI", "disability benefits"],
   authors: [{ name: "Rosen Experts" }],
   openGraph: {
     title: "Free Medical Records Review | Rosen Experts",

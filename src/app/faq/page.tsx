@@ -6,7 +6,7 @@ import FAQListenButton from "./FAQListenButton";
 
 export const metadata: Metadata = {
   title: "FAQ | Free Medical Review & Physician Opinions | Rosen Experts",
-  description: "Answers to common questions about our free medical records review, physician opinion letters, VA nexus letters, SSDI support, and insurance denial appeals.",
+  description: "Answers to common questions about our free medical records review, physician opinion letters, VA physician-authored medical opinions, SSDI support, and insurance denial appeals.",
 };
 
 export default function FAQPage() {

@@ -71,7 +71,7 @@ function getServiceLabel(claimType: string | null): { label: string; fullName: s
   }
   const type = claimType.toUpperCase();
   if (type === "VA" || type === "VA-DISABILITY") {
-    return { label: "VA Nexus Letter", fullName: "VA Nexus Letter", color: "bg-blue-100 text-blue-800" };
+    return { label: "Physician-Authored Medical Opinion", fullName: "Physician-Authored Medical Opinion", color: "bg-blue-100 text-blue-800" };
   }
   if (type === "MED_MAL" || type === "MEDICAL_MALPRACTICE") {
     return { label: "Medical Malpractice", fullName: "Medical Malpractice Opinion", color: "bg-red-100 text-red-800" };

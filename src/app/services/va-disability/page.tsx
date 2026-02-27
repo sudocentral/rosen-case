@@ -5,8 +5,8 @@ import type { Metadata } from "next";
 import VADisabilityListenButton from "./VADisabilityListenButton";
 
 export const metadata: Metadata = {
-  title: "VA Nexus Letters | Free Medical Records Review | Rosen Experts",
-  description: "Get a nexus letter from a licensed physician for your VA disability claim. Free medical records review. Service connection documentation for veterans.",
+  title: "Physician-Authored Medical Opinions | Free Medical Records Review | Rosen Experts",
+  description: "Get a physician-authored medical opinion from a licensed physician for your VA disability claim. Free medical records review. Service connection documentation for veterans.",
 };
 
 const START_URL = "/start?service=va";
@@ -41,14 +41,14 @@ export default function VADisabilityPage() {
                 <ol className="flex items-center gap-2 text-white/60 text-sm">
                   <li><Link href="/services/" className="hover:text-white">Services</Link></li>
                   <li aria-hidden="true">/</li>
-                  <li className="text-white">VA Disability & Nexus Letters</li>
+                  <li className="text-white">VA Disability & Medical Opinions</li>
                 </ol>
               </nav>
               <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6">
-                VA Nexus Letters from Licensed Physicians
+                Physician-Authored Medical Opinions for Veterans
               </h1>
               <p className="text-xl text-white/80 mb-8 leading-relaxed">
-                A nexus letter connects your current condition to your military service. Our licensed physicians review your records and, if appropriate, provide the documented medical opinion the VA requires.
+                A physician-authored medical opinion connects your current condition to your military service. Our licensed physicians review your records and, if appropriate, provide the documented medical opinion the VA requires.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href={START_URL} className="btn-white text-lg">
@@ -65,15 +65,15 @@ export default function VADisabilityPage() {
           </div>
         </section>
 
-        {/* What Is a Nexus Letter */}
+        {/* What Is a Physician-Authored Medical Opinion */}
         <section className="section-padding">
           <div className="container mx-auto">
             <div className="max-w-3xl mx-auto">
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                Understanding the Medical Nexus
+                Understanding the Medical Opinion
               </h2>
               <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                A nexus letter is a written medical opinion from a licensed physician stating that your current condition is "at least as likely as not" connected to your military service. This language aligns with the VA's standard of proof and can be the deciding factor in your claim.
+                A physician-authored medical opinion is a written medical opinion from a licensed physician stating that your current condition is "at least as likely as not" connected to your military service. This language aligns with the VA's standard of proof and can be the deciding factor in your claim.
               </p>
               
               <div className="grid md:grid-cols-2 gap-4 mt-8">
@@ -103,10 +103,10 @@ export default function VADisabilityPage() {
           <div className="container mx-auto">
             <div className="max-w-3xl mx-auto">
               <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                Is a Nexus Letter Right for Your Claim?
+                Is a Physician-Authored Medical Opinion Right for Your Claim?
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                A nexus letter may be necessary when:
+                A physician-authored medical opinion may be necessary when:
               </p>
               <ul className="space-y-3 mb-8">
                 {whenNeeded.map((item, index) => (
@@ -120,7 +120,7 @@ export default function VADisabilityPage() {
               </ul>
               <div className="card bg-[#e8f5f0] border-[#2c8a6e]/20">
                 <p className="text-gray-700">
-                  <strong>Note:</strong> Not every claim requires a nexus letter. Our free review will determine whether one is appropriate for your situation.
+                  <strong>Note:</strong> Not every claim requires a physician-authored medical opinion. Our free review will determine whether one is appropriate for your situation.
                 </p>
               </div>
             </div>
@@ -135,7 +135,7 @@ export default function VADisabilityPage() {
               
               <div className="space-y-8">
                 <div className="card">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Nexus Letters</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">Physician-Authored Medical Opinions</h3>
                   <p className="text-gray-600 mb-4">
                     A comprehensive medical opinion letter establishing the connection between your current condition and military service.
                   </p>
@@ -164,7 +164,7 @@ export default function VADisabilityPage() {
                     <strong>When You Need One:</strong> DBQs are often required for rating increases or when the VA's C&P exam was incomplete or inaccurate.
                   </p>
                   <p className="text-sm text-gray-500">
-                    DBQs are available as an add-on to nexus letter orders where clinically appropriate.
+                    DBQs are available as an add-on to medical opinion orders where clinically appropriate.
                   </p>
                 </div>
               </div>
@@ -190,14 +190,14 @@ export default function VADisabilityPage() {
                   <div className="step-number flex-shrink-0">2</div>
                   <div className="card flex-1">
                     <h3 className="font-semibold text-gray-900 mb-2">Receive Your Determination</h3>
-                    <p className="text-gray-600">Most determinations within hours; complex cases may take up to one business day. We'll tell you whether a nexus letter is appropriate for your claim.</p>
+                    <p className="text-gray-600">Most determinations within hours; complex cases may take up to one business day. We'll tell you whether a physician-authored medical opinion is appropriate for your claim.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
                   <div className="step-number flex-shrink-0">3</div>
                   <div className="card flex-1">
                     <h3 className="font-semibold text-gray-900 mb-2">Physician Review & Letter (If Qualified)</h3>
-                    <p className="text-gray-600">A licensed physician reviews your complete file and authors a detailed nexus letter tailored to your claim. Standard: up to 7 business days. Expedited (48-72 hours): $400.</p>
+                    <p className="text-gray-600">A licensed physician reviews your complete file and authors a detailed physician-authored medical opinion tailored to your claim. Standard: up to 7 business days. Expedited (48-72 hours): $400.</p>
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -220,8 +220,8 @@ export default function VADisabilityPage() {
               
               <div className="space-y-6">
                 <div className="card">
-                  <h3 className="font-semibold text-gray-900 mb-2">Will a nexus letter guarantee my claim is approved?</h3>
-                  <p className="text-gray-600">No. The VA makes all final decisions. A nexus letter provides independent medical evidence that the VA is required to consider, but it does not guarantee any outcome.</p>
+                  <h3 className="font-semibold text-gray-900 mb-2">Will a physician-authored medical opinion guarantee my claim is approved?</h3>
+                  <p className="text-gray-600">No. The VA makes all final decisions. A physician-authored medical opinion provides independent medical evidence that the VA is required to consider, but it does not guarantee any outcome.</p>
                 </div>
                 
                 <div className="card">
@@ -231,12 +231,12 @@ export default function VADisabilityPage() {
                 
                 <div className="card">
                   <h3 className="font-semibold text-gray-900 mb-2">Can you help with secondary conditions?</h3>
-                  <p className="text-gray-600">Yes. We can provide nexus letters establishing that a secondary condition was caused or aggravated by a service-connected primary condition.</p>
+                  <p className="text-gray-600">Yes. We can provide physician-authored medical opinions establishing that a secondary condition was caused or aggravated by a service-connected primary condition.</p>
                 </div>
                 
                 <div className="card">
                   <h3 className="font-semibold text-gray-900 mb-2">How is this different from the VA's C&P exam?</h3>
-                  <p className="text-gray-600">C&P exams are conducted by VA contractors who may spend limited time on each case. Our physicians conduct independent reviews focused solely on documenting the nexus.</p>
+                  <p className="text-gray-600">C&P exams are conducted by VA contractors who may spend limited time on each case. Our physicians conduct independent reviews focused solely on documenting the medical opinion.</p>
                 </div>
                 
                 <div className="card">
@@ -255,7 +255,7 @@ export default function VADisabilityPage() {
               Find Out If Your Claim Qualifies
             </h2>
             <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
-              Submit your service and medical records today. Our team will review them at no cost and let you know whether a nexus letter is appropriate for your situation.
+              Submit your service and medical records today. Our team will review them at no cost and let you know whether a physician-authored medical opinion is appropriate for your situation.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Link href={START_URL} className="btn-white text-lg">

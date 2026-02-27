@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Contact Us | Rosen Experts | Medical Opinion Letters",
-  description: "Contact Rosen Experts with questions about medical opinion letters, VA nexus letters, SSDI claims, or insurance denial appeals. Free medical records review available.",
+  description: "Contact Rosen Experts with questions about medical opinion letters, VA physician-authored medical opinions, SSDI claims, or insurance denial appeals. Free medical records review available.",
 };
 
 const START_URL = "/start/";

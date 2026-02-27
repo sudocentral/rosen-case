@@ -93,23 +93,23 @@ const faqSections: FAQSection[] = [
   },
   {
     id: "va-disability",
-    title: "VA Disability & Nexus Letters",
+    title: "VA Disability & Medical Opinions",
     questions: [
       {
-        q: "What is a nexus letter?",
-        a: "A nexus letter is a medical opinion from a licensed physician stating that your current condition is connected to your military service. It uses language the VA recognizes, such as \"at least as likely as not.\""
+        q: "What is a physician-authored medical opinion?",
+        a: "A physician-authored medical opinion is a medical opinion from a licensed physician stating that your current condition is connected to your military service. It uses language the VA recognizes, such as \"at least as likely as not.\""
       },
       {
-        q: "Will a nexus letter guarantee my VA claim is approved?",
-        a: "No. The VA makes all final decisions. A nexus letter provides independent medical evidence for the VA to consider alongside your service and medical records."
+        q: "Will a physician-authored medical opinion guarantee my VA claim is approved?",
+        a: "No. The VA makes all final decisions. A physician-authored medical opinion provides independent medical evidence for the VA to consider alongside your service and medical records."
       },
       {
         q: "Can you help with secondary conditions?",
-        a: "Yes. We can provide nexus letters for conditions caused or aggravated by a service-connected primary condition."
+        a: "Yes. We can provide physician-authored medical opinions for conditions caused or aggravated by a service-connected primary condition."
       },
       {
         q: "Do you provide DBQs?",
-        a: "Yes. Disability Benefits Questionnaires are available as an add-on to nexus letter orders where clinically appropriate."
+        a: "Yes. Disability Benefits Questionnaires are available as an add-on to medical opinion orders where clinically appropriate."
       },
       {
         q: "What if my C&P exam was unfavorable?",

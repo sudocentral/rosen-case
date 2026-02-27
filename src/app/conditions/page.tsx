@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Medical Conditions We Support | VA, SSDI, Insurance | Rosen Experts",
-  description: "Explore conditions we provide physician opinion letters for, including VA disability nexus letters, SSDI medical opinions, and insurance denial appeals.",
+  description: "Explore conditions we provide physician opinion letters for, including VA disability physician-authored medical opinions, SSDI medical opinions, and insurance denial appeals.",
 };
 
 const START_URL = "/start/";

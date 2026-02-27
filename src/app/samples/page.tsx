@@ -13,8 +13,8 @@ const START_URL = "/start/";
 export default function SamplesPage() {
   const sampleTypes = [
     {
-      title: "VA Nexus Letter",
-      whatItIs: "A medical nexus letter establishing service connection between a veteran's current condition and their military service.",
+      title: "Physician-Authored Medical Opinion",
+      whatItIs: "A medical physician-authored medical opinion establishing service connection between a veteran's current condition and their military service.",
       keyElements: [
         'Uses "at least as likely as not" language the VA recognizes',
         "References specific service treatment records and documented events",

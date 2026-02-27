@@ -13,7 +13,7 @@ const START_URL = "/start/";
 
 export default function PricingPage() {
   const services = [
-    { name: "VA Nexus Letter", price: "$1,000", notes: "Covers qualifying conditions from your records. DBQs available as add-on." },
+    { name: "Physician-Authored Medical Opinion", price: "$1,000", notes: "Covers qualifying conditions from your records. DBQs available as add-on." },
     { name: "SSDI Medical Opinion", price: "$1,000", notes: "Includes functional capacity documentation." },
     { name: "Insurance Denial Opinion", price: "$1,000", notes: "Tailored to denial reason and policy type." },
     { name: "Medical Malpractice Review", price: "$1,000", notes: "Standard of care and causation analysis." },

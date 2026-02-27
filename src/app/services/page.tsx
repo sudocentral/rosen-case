@@ -15,8 +15,8 @@ export default function ServicesPage() {
   const services = [
     {
       href: "/services/va-disability/",
-      title: "VA Disability & Nexus Letters",
-      summary: "Medical nexus letters and Disability Benefits Questionnaires (DBQs) for veterans establishing service connection. Our physicians document the link between your current condition and military service.",
+      title: "VA Disability & Medical Opinions",
+      summary: "Medical physician-authored medical opinions and Disability Benefits Questionnaires (DBQs) for veterans establishing service connection. Our physicians document the link between your current condition and military service.",
       whoFor: "Veterans filing or appealing VA disability claims",
       icon: MilitaryIcon,
     },

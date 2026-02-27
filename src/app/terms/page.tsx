@@ -38,7 +38,7 @@ export default function TermsOfServicePage() {
               <p>Rosen Experts provides:</p>
               <ul>
                 <li><strong>Free Medical Records Review:</strong> Analysis of submitted medical documentation to determine if a case qualifies for a supporting physician opinion</li>
-                <li><strong>Physician Opinion Letters:</strong> Written medical opinions authored by licensed physicians, including nexus letters, SSDI support letters, and independent medical opinions</li>
+                <li><strong>Physician Opinion Letters:</strong> Written medical opinions authored by licensed physicians, including physician-authored medical opinions, SSDI support letters, and independent medical opinions</li>
                 <li><strong>Disability Benefits Questionnaires (DBQs):</strong> Standardized forms documenting condition severity (available as add-on)</li>
               </ul>
 

@@ -3,15 +3,15 @@
 import { PageListenButton } from "@/ui/ListenButton";
 
 const vaDisabilityScript = `
-If you're a veteran seeking service connection for a disability, a nexus letter may be what you need.
+If you're a veteran seeking service connection for a disability, a physician-authored medical opinion may be what you need.
 
-A nexus letter is a medical opinion from a licensed physician stating that your current condition is connected to your military service. The key phrase is "at least as likely as not," which aligns with the VA's standard of proof.
+A physician-authored medical opinion is a medical opinion from a licensed physician stating that your current condition is connected to your military service. The key phrase is "at least as likely as not," which aligns with the VA's standard of proof.
 
-You might need a nexus letter if your service records don't clearly document an in-service event, if the VA examiner gave an unfavorable opinion, if you're claiming a secondary condition, or if you're appealing a denied claim.
+You might need a physician-authored medical opinion if your service records don't clearly document an in-service event, if the VA examiner gave an unfavorable opinion, if you're claiming a secondary condition, or if you're appealing a denied claim.
 
 Here's how it works with us. First, you submit your service treatment records and VA medical records through our secure portal. Our team reviews them at no cost. Most determinations arrive the same day, often within hours.
 
-If you qualify, a licensed physician reviews your complete file and authors a detailed nexus letter. Standard delivery takes up to seven business days. Expedited delivery of 48 to 72 hours is available for four hundred dollars.
+If you qualify, a licensed physician reviews your complete file and authors a detailed physician-authored medical opinion. Standard delivery takes up to seven business days. Expedited delivery of 48 to 72 hours is available for four hundred dollars.
 
 We also offer Disability Benefits Questionnaires as an add-on when clinically appropriate.
 

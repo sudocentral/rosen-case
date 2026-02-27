@@ -5,7 +5,7 @@ import { PageListenButton } from "@/ui/ListenButton";
 const servicesScript = `
 We provide physician-authored medical opinions for a variety of case types. Every service begins with a free medical records review.
 
-For veterans, we offer VA disability and nexus letters. These medical nexus letters establish the connection between your current condition and military service. We also provide Disability Benefits Questionnaires.
+For veterans, we offer VA disability and physician-authored medical opinions. These medical physician-authored medical opinions establish the connection between your current condition and military service. We also provide Disability Benefits Questionnaires.
 
 For Social Security disability, we provide SSDI claims support. Our physicians document how your condition meets the SSA's definition of disability and limits your ability to work.
 

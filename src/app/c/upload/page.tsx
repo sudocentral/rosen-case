@@ -1173,7 +1173,7 @@ export default function UploadPage() {
                       <div className="flex-1">
                         <p className="font-medium text-blue-900">Auto-detect complete</p>
                         <p className="text-sm text-blue-700 mt-1">
-                          Case type detected: {caseTypeHint === "va_nexus" ? "VA Nexus Letter" : caseTypeHint === "imo" ? "Medical Opinion" : caseTypeHint}
+                          Case type detected: {caseTypeHint === "va_nexus" ? "Physician-Authored Medical Opinion" : caseTypeHint === "imo" ? "Medical Opinion" : caseTypeHint}
                         </p>
                       </div>
                     </div>

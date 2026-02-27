@@ -29,7 +29,7 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-4">Services</h4>
             <ul className="space-y-3">
-              <li><Link href="/services/va-disability/" className="hover:text-white transition-colors">VA Disability & Nexus Letters</Link></li>
+              <li><Link href="/services/va-disability/" className="hover:text-white transition-colors">VA Disability & Medical Opinions</Link></li>
               <li><Link href="/services/ssdi/" className="hover:text-white transition-colors">SSDI Claims</Link></li>
               <li><Link href="/services/insurance-denial/" className="hover:text-white transition-colors">Insurance Denials</Link></li>
               <li><Link href="/services/medical-malpractice/" className="hover:text-white transition-colors">Medical Malpractice</Link></li>

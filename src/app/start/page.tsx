@@ -32,9 +32,9 @@ const getServiceConfig = (service: ServiceType) => {
   // C-1: Use "Medical Opinion" instead of "IMO" for non-VA until claim_type is determined
   return {
     isVA,
-    documentName: isVA ? "Nexus Letter" : "Medical Opinion",
-    documentNameShort: isVA ? "Nexus Letter" : "Medical Opinion",
-    step4Label: isVA ? "If Qualified → Charge + Release Nexus Letter" : "If Qualified → Charge + Release Medical Opinion",
+    documentName: isVA ? "Physician-Authored Medical Opinion" : "Medical Opinion",
+    documentNameShort: isVA ? "Physician-Authored Medical Opinion" : "Medical Opinion",
+    step4Label: isVA ? "If Qualified → Charge + Release Physician-Authored Medical Opinion" : "If Qualified → Charge + Release Medical Opinion",
     qualificationNote: isVA
       ? "For VA cases, qualification requires sufficient medical evidence and a supportable service-connection rationale."
       : "For non-VA cases, qualification requires sufficient medical evidence to support a Medical Opinion for your purpose.",

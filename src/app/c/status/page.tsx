@@ -6,7 +6,7 @@
  * Features:
  * - Two-column responsive layout
  * - Progress tracker with stages
- * - Service type badge (VA Nexus / SSDI IMO)
+ * - Service type badge (VA Medical Opinion / SSDI IMO)
  * - Secure message form (no exposed emails)
  * - Professional medical/legal aesthetic
  * - Multi-case roster with search + active/archived split
@@ -142,9 +142,9 @@ function getRosterClaimType(claimType: string | null): string {
   // C-1: Only return known types, otherwise empty (no inference)
   if (!claimType || claimType === "AUTO") return "";
   const typeMap: Record<string, string> = {
-    va: "VA Nexus",
-    "va-disability": "VA Nexus",
-    va_nexus: "VA Nexus",
+    va: "VA Medical Opinion",
+    "va-disability": "VA Medical Opinion",
+    va_nexus: "VA Medical Opinion",
     ssdi: "SSDI",
     ssi: "SSI",
     ssa: "SSI",
@@ -231,7 +231,7 @@ function getServiceTypeLabel(claimType: string | null): { label: string; color: 
   }
   const type = claimType.toUpperCase();
   if (type === "VA" || type === "VA-DISABILITY" || type === "VA_NEXUS") {
-    return { label: "VA Nexus Letter", color: "bg-blue-100 text-blue-800", fullName: "VA Nexus Letter" };
+    return { label: "Physician-Authored Medical Opinion", color: "bg-blue-100 text-blue-800", fullName: "Physician-Authored Medical Opinion" };
   }
   if (type === "SSDI" || type === "SSI" || type === "SSA") {
     return { label: "SSDI/SSI", color: "bg-purple-100 text-purple-800", fullName: "Social Security Disability" };
@@ -1198,7 +1198,7 @@ export default function ClientStatusPage() {
       return {
         type: "neutral",
         title: "Review Complete",
-        message: "After careful review, we were unable to establish sufficient medical evidence for a nexus opinion at this time. You have not been charged.",
+        message: "After careful review, we were unable to establish sufficient medical evidence for a medical opinion at this time. You have not been charged.",
       };
     }
 

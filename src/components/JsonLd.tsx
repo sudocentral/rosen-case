@@ -35,7 +35,7 @@ export default function JsonLd() {
           "@type": "Offer",
           "itemOffered": {
             "@type": "Service",
-            "name": "VA Nexus Letters",
+            "name": "Physician-Authored Medical Opinions",
             "description": "Medical opinion letters for VA disability claims"
           }
         },

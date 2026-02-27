@@ -7,7 +7,7 @@ const START_URL = "/start?service=general";
 
 export default function HomePage() {
   const services = [
-    { href: "/services/va-disability/", title: "VA Disability & Nexus Letters", desc: "Medical nexus letters establishing service connection for veterans" },
+    { href: "/services/va-disability/", title: "VA Disability & Medical Opinions", desc: "Medical physician-authored medical opinions establishing service connection for veterans" },
     { href: "/services/ssdi/", title: "SSDI Claims", desc: "Medical opinions supporting Social Security Disability applications" },
     { href: "/services/insurance-denial/", title: "Insurance Denial Appeals", desc: "Independent opinions challenging claim denials" },
     { href: "/services/medical-malpractice/", title: "Medical Malpractice Review", desc: "Expert evaluation of standard of care issues" },
