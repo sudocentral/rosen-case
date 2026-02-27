@@ -70,6 +70,7 @@ export default function UploadPage() {
   const [passwordError, setPasswordError] = useState("");
   const [passwordAttempts, setPasswordAttempts] = useState(0);
   const [removedProtectedBanner, setRemovedProtectedBanner] = useState("");
+  const [removingProtectedFiles, setRemovingProtectedFiles] = useState(false);
   const [isDecrypting, setIsDecrypting] = useState(false);
 
   // Sentinel postprocess state (SECURING_FILES flow)
@@ -1504,27 +1505,38 @@ export default function UploadPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={async () => {
-                      // Remove password-protected files from case, keep others
+                      setRemovingProtectedFiles(true);
+                      // Best-effort exclude — never block closing the modal
                       const protectedNames = sentinelPasswordFiles.map(f => f.filename);
                       for (const ef of existingFiles) {
                         if (protectedNames.some(pn => ef.filename === pn || ef.filename.includes(pn))) {
-                          await excludeExistingFile(ef.id);
+                          try {
+                            await excludeExistingFile(ef.id);
+                          } catch {
+                            // Soft failure — file already removed from UI by excludeExistingFile
+                          }
                         }
                       }
+                      // Always run — regardless of API results
                       setSentinelPasswordFiles([]);
                       setSentinelPasswords({});
                       setSentinelError("");
-                      setRemovedProtectedBanner("Password-protected files were removed. Re-upload them without a password if you want us to process them.");
-                      // Re-run sentinel on remaining files
-                      runSentinelPostprocess();
+                      setPasswordError("");
+                      setRemovedProtectedBanner("Protected files removed. You can continue.");
+                      setRemovingProtectedFiles(false);
+                      if (!securingFiles) {
+                        runSentinelPostprocess();
+                      }
                     }}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                    disabled={removingProtectedFiles}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Remove Protected Files
+                    {removingProtectedFiles ? "Removing…" : "Remove Protected Files"}
                   </button>
                   <button
                     onClick={submitSentinelPasswords}
-                    className="flex-1 px-4 py-3 bg-[#1a5f7a] text-white rounded-lg font-medium hover:bg-[#134a5f] transition-colors"
+                    disabled={removingProtectedFiles}
+                    className="flex-1 px-4 py-3 bg-[#1a5f7a] text-white rounded-lg font-medium hover:bg-[#134a5f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Unlock Files
                   </button>
