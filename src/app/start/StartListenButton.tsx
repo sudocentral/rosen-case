@@ -5,15 +5,17 @@ import { PageListenButton } from "@/ui/ListenButton";
 const startScript = `
 Welcome. You're about to start your free medical records review.
 
-Here's what happens. You'll upload your medical records through our secure portal. This takes about five to ten minutes. Our physician-led team will review your documentation and provide a same-day determination about whether your case qualifies for a supporting medical opinion.
+Here's how it works. You'll securely upload your medical records through our encrypted portal. This usually takes five to ten minutes. Once submitted, our physician-led team reviews your documentation and provides a quick determination about whether your case qualifies for a supporting medical opinion.
 
-If you qualify, a licensed physician authors your medical opinion letter. If you don't qualify, you owe nothing and we'll explain why.
+If your case qualifies, a licensed physician will author your medical opinion letter. If it does not qualify, you owe nothing, and we'll clearly explain why.
 
-The form on this page asks for your contact information, details about your case, and your medical records upload. All information is encrypted and handled in compliance with HIPAA.
+All information submitted through this portal is encrypted and handled securely in full compliance with the Health Insurance Portability and Accountability Act.
 
-Take your time filling out the form. The more complete your submission, the more accurate our determination.
+If you're a Veterans Service Officer or a law firm submitting records for clients, you can use your own email address. When more than one case is submitted under the same email, the system automatically switches to multi-patient mode, making it easy to manage multiple clients from one dashboard.
 
-Ready to find out if your case qualifies? Complete the form and submit your records.
+Take your time completing the form. The more complete your submission, the more accurate our determination will be.
+
+When you're ready, complete the form and submit your records to begin your free review.
 `.trim();
 
 export default function StartListenButton() {
