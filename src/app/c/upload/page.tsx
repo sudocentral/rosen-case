@@ -394,6 +394,8 @@ export default function UploadPage() {
 
   const excludeExistingFile = async (fileId: string) => {
     if (!token) return;
+    // Always remove from local UI immediately — user intent is to proceed
+    setExistingFiles((prev) => prev.filter((f) => f.id !== fileId));
     try {
       const response = await fetch(`${API_URL}/file/${fileId}/exclude`, {
         method: "POST",
@@ -404,13 +406,12 @@ export default function UploadPage() {
         body: JSON.stringify({ reason: "client_removed_before_submit" }),
       });
       const data = await response.json();
-      if (data.success) {
-        setExistingFiles((prev) => prev.filter((f) => f.id !== fileId));
-      } else {
-        setError(data.error || "Failed to remove file");
+      if (!data.success && response.status !== 409) {
+        console.warn("[exclude] API returned non-success for file " + fileId + ":", data.error);
       }
     } catch (err) {
-      setError("Failed to remove file. Please try again.");
+      // Network error — file already removed from UI, log and continue
+      console.warn("[exclude] Network error excluding file " + fileId + ":", err);
     }
   };
 
