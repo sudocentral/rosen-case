@@ -486,6 +486,13 @@ export default function UploadPage() {
         // Close modal and reset state
         setPasswordModalFile(null);
         setPasswordInput("");
+        setPasswordError("");
+        setRemovedProtectedBanner("");
+        // Re-run sentinel postprocess so secureComplete flips to true
+        // Guard: skip if a postprocess call is already in-flight
+        if (!securingFiles) {
+          runSentinelPostprocess();
+        }
       } else {
         const attempts = passwordAttempts + 1;
         setPasswordAttempts(attempts);
