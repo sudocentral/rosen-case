@@ -399,9 +399,6 @@ export default function NewPatientPage() {
               </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-gray-500">
-              You will not be charged unless the case qualifies.
-            </p>
           </div>
         </div>
       </main>
