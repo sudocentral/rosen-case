@@ -60,6 +60,7 @@ interface CaseStatus {
   stripe_payment_method_id?: string | null;
   auto_charge_status?: string | null;
   claim_type?: string | null;
+  client_stage?: string | null;
 }
 
 interface UploadedFile {
@@ -224,9 +225,11 @@ const PROGRESS_STAGES = [
   { key: "ready", label: "Letter Ready", icon: "download" },
 ];
 
-function getStageFromStatus(status: string, determination: string | null): number {
+function getStageFromStatus(status: string, determination: string | null, clientStage?: string | null): number {
   if (["delivered", "letter_ready", "final_pdf_ready"].includes(status)) return 4;
   if (["physician_review", "paid_letter_fee", "ai_draft_ready", "paid_review", "qc_required", "records_requested", "records_received", "redaction_complete"].includes(status)) return 3;
+  // Manual QA approval advances to step 3 (Qualification Decision complete)
+  if (clientStage === "qualification_complete_manual") return 2;
   if (determination) return 2;
   if (["intake_submitted", "gatekeeper_pass", "free_narrative_queued", "free_narrative_ready", "ai_review", "qa_review"].includes(status)) return 1;
   return 0;
@@ -1243,6 +1246,15 @@ export default function ClientStatusPage() {
       };
     }
 
+    // Manual QA approval: case qualified via human review, preparing next steps
+    if (caseStatus.client_stage === "qualification_complete_manual") {
+      return {
+        type: "progress",
+        title: "Qualification Complete",
+        message: "A QA reviewer approved your case. Our team is preparing next steps.",
+      };
+    }
+
     return {
       type: "progress",
       title: "Records Under Review",
@@ -1671,10 +1683,14 @@ export default function ClientStatusPage() {
     );
   }
 
-  const statusConfig = getStatusConfig(caseStatus.status);
+  let statusConfig = getStatusConfig(caseStatus.status);
+  // Override badge for manual QA approval (client_stage signals progress even if status lags)
+  if (caseStatus.client_stage === "qualification_complete_manual") {
+    statusConfig = { bg: "bg-emerald-100", text: "text-emerald-800", label: "Qualification Complete" };
+  }
   const serviceType = getServiceTypeLabel(caseStatus.claim_type ?? null);
   // C-4: Only include determination in stage calculation when visible
-  const currentStage = getStageFromStatus(caseStatus.status, caseStatus.determination_visible ? caseStatus.determination : null);
+  const currentStage = getStageFromStatus(caseStatus.status, caseStatus.determination_visible ? caseStatus.determination : null, caseStatus.client_stage);
   const nextStep = getNextStepContent();
   const showResubmitBtn = canResubmit(caseStatus);
 
