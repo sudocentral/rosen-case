@@ -71,6 +71,7 @@ export default function UploadPage() {
   const [passwordAttempts, setPasswordAttempts] = useState(0);
   const [removedProtectedBanner, setRemovedProtectedBanner] = useState("");
   const [removingProtectedFiles, setRemovingProtectedFiles] = useState(false);
+  const [deleteToast, setDeleteToast] = useState("");
   const [isDecrypting, setIsDecrypting] = useState(false);
 
   // Sentinel postprocess state (SECURING_FILES flow)
@@ -407,12 +408,16 @@ export default function UploadPage() {
         body: JSON.stringify({ reason: "client_removed_before_submit" }),
       });
       const data = await response.json();
-      if (!data.success && response.status !== 409) {
-        console.warn("[exclude] API returned non-success for file " + fileId + ":", data.error);
+      if (data.success || response.status === 409) {
+        setDeleteToast("File deleted");
+        setTimeout(() => setDeleteToast(""), 3000);
+      } else {
+        setError(data.error || "Failed to remove file. Please try again.");
       }
     } catch (err) {
-      // Network error — file already removed from UI, log and continue
+      // Network error — file already removed from UI, show error
       console.warn("[exclude] Network error excluding file " + fileId + ":", err);
+      setError("Network error removing file. Please check your connection.");
     }
   };
 
@@ -1033,6 +1038,13 @@ export default function UploadPage() {
               </div>
             )}
 
+            {deleteToast && (
+              <div className="mb-4 bg-gray-800 text-white text-sm px-4 py-3 rounded-lg shadow-lg flex items-center justify-between">
+                <span>{deleteToast}</span>
+                <button onClick={() => setDeleteToast("")} className="ml-4 text-gray-300 hover:text-white">&times;</button>
+              </div>
+            )}
+
             {error && (
               <div className="mb-6">
                 <Alert type="error" title="Error">{error}</Alert>
@@ -1117,7 +1129,14 @@ export default function UploadPage() {
                       status="ready"
                       progress={100}
                       pdfRequiresPassword={file.pdfRequiresPassword}
-                      onRemove={isEditMode ? undefined : () => excludeExistingFile(file.id)}
+                      onRemove={() => {
+                        if (isEditMode) {
+                          setDeleteToast("Uploads are locked after approval. Contact support if you need to add records.");
+                          setTimeout(() => setDeleteToast(""), 5000);
+                        } else {
+                          excludeExistingFile(file.id);
+                        }
+                      }}
                       onUnlock={file.pdfRequiresPassword ? () => openPasswordModal(file) : undefined}
                     />
                   ))}
