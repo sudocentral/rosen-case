@@ -1135,6 +1135,7 @@ export default function UploadPage() {
                       status="ready"
                       progress={100}
                       pdfRequiresPassword={file.pdfRequiresPassword}
+                      converting={securingFiles && !file.contentType?.toLowerCase().includes("pdf")}
                       onRemove={() => {
                         if (isEditMode) {
                           setDeleteToast("Uploads are locked after approval. Contact support if you need to add records.");
@@ -1665,6 +1666,7 @@ interface FileRowProps {
   progress: number;
   error?: string;
   pdfRequiresPassword?: boolean;
+  converting?: boolean;
   onRemove?: () => void;
   onUnlock?: () => void;
 }
@@ -1677,6 +1679,7 @@ function FileRow({
   progress,
   error,
   pdfRequiresPassword,
+  converting,
   onRemove,
   onUnlock,
 }: FileRowProps) {
@@ -1729,6 +1732,17 @@ function FileRow({
                 </button>
               )}
             </div>
+          )}
+
+          {/* Converting to PDF indicator */}
+          {converting && !pdfRequiresPassword && (
+            <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+              <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Converting to PDF for processing…
+            </p>
           )}
         </div>
 
