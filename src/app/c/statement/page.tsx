@@ -416,7 +416,7 @@ export default function StatementPage() {
                 <span className="text-sm text-gray-700">
                   <span className="text-red-500 font-bold">*</span>{" "}
                   I have read and agree to the{" "}
-                  <a href="/terms" className="text-[#1a5f7a] underline" target="_blank">
+                  <a href="https://rosenexperts.com/client-tos/" className="text-[#1a5f7a] underline" target="_blank">
                     Terms of Service
                   </a>.
                 </span>
