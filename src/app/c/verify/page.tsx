@@ -59,30 +59,21 @@ function VerifyContent() {
           localStorage.setItem("rosen_case_id", data.case_id);
         }
 
-        // Check if files need to be uploaded
-        let needsUpload = false;
-        if (data.case_status === "intake_in_progress") {
-          try {
-            const filesRes = await fetch(FILES_URL, {
-              headers: { "x-intake-token": tokenValue }
-            });
-            const filesData = await filesRes.json();
-            const uploadedCount = filesData.success 
-              ? (filesData.data.files || []).filter((f: any) => f.status === "uploaded").length 
-              : 0;
-            needsUpload = uploadedCount === 0;
-          } catch (e) {
-            // If files check fails, default to upload page
-            needsUpload = true;
-          }
+        // Use backend required_step to determine where user should go
+        // Backend is source of truth (intake-state.js computes this)
+        let destination = "/c/status";
+        if (data.required_step === "files") {
+          destination = "/c/upload";
+        } else if (data.required_step === "dob_description") {
+          destination = "/c/statement";
         }
 
-        setRedirectTarget(needsUpload ? "/c/upload" : "/c/status");
+        setRedirectTarget(destination);
         setStatus("success");
 
         // Redirect after brief delay
         setTimeout(() => {
-          router.push(needsUpload ? "/c/upload" : "/c/status");
+          router.push(destination);
         }, 1500);
       } else {
         if (data.reason === "expired") {
