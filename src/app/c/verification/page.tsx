@@ -360,6 +360,7 @@ export default function CardAuthorizationPage() {
   const handleSuccess = useCallback(() => {
     // Persist submission flag so success screen survives page reloads
     localStorage.setItem("rosen_card_submitted", Date.now().toString());
+    window.scrollTo(0, 0);
     setSuccess(true);
     setLoading(false);
 
