@@ -118,8 +118,10 @@ function VerifyContent() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Link Verified!</h1>
           <p className="text-gray-600">
-            {redirectTarget === "/c/upload" 
-              ? "Redirecting you to upload your medical records..." 
+            {redirectTarget === "/c/upload"
+              ? "Redirecting you to upload your medical records..."
+              : redirectTarget === "/c/statement"
+              ? "Redirecting you to continue your intake..."
               : "Redirecting you to your case status..."}
           </p>
         </>
