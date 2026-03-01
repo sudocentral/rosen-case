@@ -61,6 +61,7 @@ interface CaseStatus {
   auto_charge_status?: string | null;
   claim_type?: string | null;
   client_stage?: string | null;
+  hosted_invoice_url?: string | null;
 }
 
 interface UploadedFile {
@@ -1256,6 +1257,11 @@ export default function ClientStatusPage() {
     if (status === "collect_letter_fee") {
       const isCardFailure = caseStatus.auto_charge_status?.startsWith("failed_") ||
                              caseStatus.auto_charge_status === "no_payment_method";
+      // Prefer Stripe hosted invoice (supports Klarna + card + Apple/Google Pay)
+      // Fall back to /c/verification for card setup + add-ons flow
+      const token = typeof window !== "undefined" ? localStorage.getItem("rosen_client_token") : null;
+      const paymentHref = caseStatus.hosted_invoice_url
+        || (token ? `/c/verification?token=${token}` : `/c/payment?case=${caseStatus.case_id}`);
       return {
         type: "action",
         title: isCardFailure ? "Payment Method Update Required" : "Payment Required",
@@ -1264,7 +1270,7 @@ export default function ClientStatusPage() {
           : "Your case qualified! Complete payment to begin your physician review.",
         action: {
           label: isCardFailure ? "Update Payment" : "Complete Payment",
-          href: `/c/payment?case=${caseStatus.case_id}`,
+          href: paymentHref,
         },
       };
     }
