@@ -593,7 +593,7 @@ export default function CardAuthorizationPage() {
             {/* DBQ Add-On — VA only */}
             {isVA && (
               <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
-                <h3 className="font-semibold text-gray-900 mb-2">Disability Benefits Questionnaires (DBQs)</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">Disability Benefits Questionnaires (DBQs) (Optional)</h3>
                 <div className="text-sm text-gray-600 space-y-3 mb-4">
                   <p>
                     A Disability Benefits Questionnaire (DBQ) is a VA-recognized medical form used to document the diagnosis, severity, symptoms, and functional impact of a specific medical condition for disability compensation purposes.
@@ -640,7 +640,7 @@ export default function CardAuthorizationPage() {
 
             {/* Expedited Delivery Option */}
             <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
-              <h3 className="font-semibold text-gray-900 mb-2">Expedited Delivery (Optional)</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">Delivery Timeline</h3>
               <p className="text-sm text-gray-600 mb-4">
                 Eligible clients can receive their IMO Report as fast as 72 hours from receipt of their relevant medical records. If, due to the lack of medical evidence we are unable to provide the report, we will not charge you the expedited service fee.
               </p>
