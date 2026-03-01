@@ -257,6 +257,7 @@ export default function CardAuthorizationPage() {
   const [klarnaProcessing, setKlarnaProcessing] = useState(false);
   const [klarnaError, setKlarnaError] = useState<string | null>(null);
   const [klarnaAuthorized, setKlarnaAuthorized] = useState(false);
+  const [klarnaFallback, setKlarnaFallback] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -271,6 +272,13 @@ export default function CardAuthorizationPage() {
         // Clean URL
         window.history.replaceState({}, "", window.location.pathname);
         return;
+      } else {
+        // Klarna failed or was cancelled — fall back to card
+        setKlarnaFallback(true);
+        window.history.replaceState({}, "", window.location.pathname);
+        setTimeout(() => {
+          document.getElementById("card-entry-section")?.scrollIntoView({ behavior: "smooth" });
+        }, 300);
       }
     }
 
@@ -692,6 +700,14 @@ export default function CardAuthorizationPage() {
               </div>
             </div>
 
+            {/* Klarna fallback banner */}
+            {klarnaFallback && (
+              <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                <p className="text-red-700 font-medium">Klarna authorization didn&apos;t complete. Please enter a card to continue.</p>
+              </div>
+            )}
+
+            <div id="card-entry-section" />
             {clientSecret && caseId && publishableKey ? (
               <Elements
                 stripe={getStripePromise(publishableKey)}
