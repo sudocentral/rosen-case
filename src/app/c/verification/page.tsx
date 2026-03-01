@@ -254,6 +254,8 @@ export default function CardAuthorizationPage() {
   const [expeditedDelivery, setExpeditedDelivery] = useState<"STANDARD_7_DAYS" | "EXPEDITED_72_HOURS">("STANDARD_7_DAYS");
 
   // Klarna authorization state
+  const [useKlarna, setUseKlarna] = useState(false);
+  const [klarnaAgreed, setKlarnaAgreed] = useState(false);
   const [klarnaProcessing, setKlarnaProcessing] = useState(false);
   const [klarnaError, setKlarnaError] = useState<string | null>(null);
   const [klarnaAuthorized, setKlarnaAuthorized] = useState(false);
@@ -275,6 +277,7 @@ export default function CardAuthorizationPage() {
       } else {
         // Klarna failed or was cancelled — fall back to card
         setKlarnaFallback(true);
+        setUseKlarna(false);
         window.history.replaceState({}, "", window.location.pathname);
         setTimeout(() => {
           document.getElementById("card-entry-section")?.scrollIntoView({ behavior: "smooth" });
@@ -391,7 +394,7 @@ export default function CardAuthorizationPage() {
 
   // Handle Klarna authorization
   const handleKlarnaAuthorize = async () => {
-    if (!caseId || !publishableKey) return;
+    if (!caseId || !publishableKey || !klarnaAgreed) return;
 
     // DBQ conditions gate (same as card flow)
     if (dbqCount > 0 && dbqConditions.filter(c => c?.trim()).length < dbqCount) {
@@ -453,6 +456,11 @@ export default function CardAuthorizationPage() {
       setKlarnaAuthorized(true);
     } catch (err) {
       setKlarnaError(err instanceof Error ? err.message : "Something went wrong with Klarna");
+      setUseKlarna(false);
+      setKlarnaFallback(true);
+      setTimeout(() => {
+        document.getElementById("card-entry-section")?.scrollIntoView({ behavior: "smooth" });
+      }, 300);
     } finally {
       setKlarnaProcessing(false);
     }
@@ -506,7 +514,9 @@ export default function CardAuthorizationPage() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-3">Records Submitted</h1>
             <p className="text-gray-700 mb-4">
-              Your card has been verified and your records are now in our review queue. The $1.00 hold will be released automatically.
+              {klarnaAuthorized
+                ? "Your Klarna authorization is confirmed and your records are now in our review queue."
+                : "Your card has been verified and your records are now in our review queue. The $1.00 hold will be released automatically."}
             </p>
             <div className="bg-blue-50 rounded-xl p-4 mb-6 text-left">
               <h3 className="font-semibold text-blue-900 mb-2">What happens next</h3>
@@ -692,7 +702,11 @@ export default function CardAuthorizationPage() {
                     const breakdown = totalCents > baseCents ? ` (${parts.join(" + ")})` : "";
                     return (
                       <ul className="text-blue-800 text-sm space-y-1">
-                        <li>A $1.00 hold confirms your card is valid. It is released automatically.</li>
+                        {useKlarna ? (
+                          <li>When using Klarna, you authorize the full total today. We only capture payment if you qualify.</li>
+                        ) : (
+                          <li>A $1.00 hold confirms your card is valid. It is released automatically.</li>
+                        )}
                         <li>We review your records for free. <span className="bg-amber-200/70 px-1 rounded font-medium">Most cases do not qualify.</span></li>
                         <li>If your case qualifies, we charge <strong>{totalStr} total{breakdown}</strong>, and a physician begins your medical opinion.</li>
                         <li>If your case does not qualify, you pay nothing.</li>
@@ -703,6 +717,25 @@ export default function CardAuthorizationPage() {
               </div>
             </div>
 
+            {/* Payment method toggle */}
+            <div className="mb-6">
+              <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-gray-200 hover:border-[#FFB3C7] transition-colors">
+                <input
+                  type="checkbox"
+                  checked={useKlarna}
+                  onChange={(e) => { setUseKlarna(e.target.checked); setKlarnaAgreed(false); }}
+                  className="w-5 h-5 rounded border-gray-300 text-[#FFB3C7] focus:ring-[#FFB3C7]"
+                />
+                <div className="flex items-center gap-2">
+                  <svg viewBox="0 0 45 25" className="h-4 w-auto" fill="#17120F">
+                    <path d="M41.5 0H3.5C1.6 0 0 1.6 0 3.5v18C0 23.4 1.6 25 3.5 25h38c1.9 0 3.5-1.6 3.5-3.5v-18C45 1.6 43.4 0 41.5 0zM11.8 17.3H9.6V7.7h2.2v9.6zm6.6 0h-2.1v-1c-.7.8-1.7 1.2-2.8 1.2-2.2 0-3.9-1.9-3.9-4.1s1.8-4.1 3.9-4.1c1.1 0 2.1.4 2.8 1.2V9.4h2.1v7.9zm6.1 0h-2.3l-2.5-3.2v3.2h-2.1V7.7h2.1v6l2.3-3h2.5l-2.7 3.3 2.7 3.3zm7.1 0h-2.1v-1c-.7.8-1.7 1.2-2.8 1.2-2.2 0-3.9-1.9-3.9-4.1s1.8-4.1 3.9-4.1c1.1 0 2.1.4 2.8 1.2V9.4h2.1v7.9z"/>
+                  </svg>
+                  <span className="text-sm font-medium text-gray-900">Pay with Klarna</span>
+                  <span className="text-xs text-gray-500">Split into 4 interest-free payments</span>
+                </div>
+              </label>
+            </div>
+
             {/* Klarna fallback banner */}
             {klarnaFallback && (
               <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-4 text-center">
@@ -711,50 +744,80 @@ export default function CardAuthorizationPage() {
             )}
 
             <div id="card-entry-section" />
-            {clientSecret && caseId && publishableKey ? (
-              <Elements
-                stripe={getStripePromise(publishableKey)}
-                options={{
-                  clientSecret,
-                  appearance: {
-                    theme: "stripe",
-                    variables: {
-                      colorPrimary: "#1a5f7a",
-                      borderRadius: "8px",
-                    },
-                  },
-                }}
-              >
-                <SetupForm
-                  clientSecret={clientSecret}
-                  caseId={caseId}
-                  onSuccess={handleSuccess}
-                  dbqCount={dbqCount}
-                  dbqConditions={dbqConditions}
-                  onNeedConditions={() => setShowConditionsModal(true)}
-                  submitTrigger={submitTrigger}
-                  physicianStatementRequested={physicianStatementRequested}
-                  expeditedDelivery={expeditedDelivery}
-                />
-              </Elements>
-            ) : (
-              <div className="bg-gray-100 rounded-xl p-6 text-center">
-                <p className="text-gray-600">Loading card form...</p>
-              </div>
+
+            {/* Card form — hidden when Klarna selected */}
+            {!useKlarna && (
+              <>
+                {clientSecret && caseId && publishableKey ? (
+                  <Elements
+                    stripe={getStripePromise(publishableKey)}
+                    options={{
+                      clientSecret,
+                      appearance: {
+                        theme: "stripe",
+                        variables: {
+                          colorPrimary: "#1a5f7a",
+                          borderRadius: "8px",
+                        },
+                      },
+                    }}
+                  >
+                    <SetupForm
+                      clientSecret={clientSecret}
+                      caseId={caseId}
+                      onSuccess={handleSuccess}
+                      dbqCount={dbqCount}
+                      dbqConditions={dbqConditions}
+                      onNeedConditions={() => setShowConditionsModal(true)}
+                      submitTrigger={submitTrigger}
+                      physicianStatementRequested={physicianStatementRequested}
+                      expeditedDelivery={expeditedDelivery}
+                    />
+                  </Elements>
+                ) : (
+                  <div className="bg-gray-100 rounded-xl p-6 text-center">
+                    <p className="text-gray-600">Loading card form...</p>
+                  </div>
+                )}
+              </>
             )}
 
-            {/* Klarna Option */}
-            {!klarnaAuthorized && publishableKey && caseId && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="text-center mb-4">
-                  <span className="text-sm text-gray-500">or</span>
-                </div>
+            {/* Klarna authorization form — shown when Klarna selected */}
+            {useKlarna && !klarnaAuthorized && (
+              <div className="space-y-6">
+                {/* Klarna agreement checkbox */}
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={klarnaAgreed}
+                    onChange={(e) => setKlarnaAgreed(e.target.checked)}
+                    className="mt-1 w-5 h-5 rounded border-gray-300 text-[#FFB3C7] focus:ring-[#FFB3C7]"
+                  />
+                  <span className="text-sm text-gray-700">
+                    {(() => {
+                      const baseCents = 100000;
+                      const dbqCents = dbqCount * 19900;
+                      const expeditedCents = expeditedDelivery === "EXPEDITED_72_HOURS" ? 40000 : 0;
+                      const totalCents = baseCents + dbqCents + expeditedCents;
+                      const totalStr = `$${(totalCents / 100).toLocaleString()}`;
+                      return `I authorize Klarna to place an authorization for ${totalStr}. If I qualify, I authorize Rosen Experts to capture the payment and begin drafting. If I do not qualify, the authorization will be canceled/released.`;
+                    })()}
+                  </span>
+                </label>
+
+                {klarnaError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <p className="text-red-700 text-sm">{klarnaError}</p>
+                  </div>
+                )}
+
+                {/* Authorize with Klarna CTA */}
                 <button
                   type="button"
                   onClick={handleKlarnaAuthorize}
-                  disabled={klarnaProcessing}
+                  disabled={klarnaProcessing || !klarnaAgreed}
                   className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold text-lg transition-all ${
-                    klarnaProcessing
+                    klarnaProcessing || !klarnaAgreed
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                       : "bg-[#FFB3C7] text-[#17120F] hover:bg-[#FFA0B8] hover:shadow-lg"
                   }`}
@@ -772,18 +835,10 @@ export default function CardAuthorizationPage() {
                       <svg viewBox="0 0 45 25" className="h-5 w-auto" fill="#17120F">
                         <path d="M41.5 0H3.5C1.6 0 0 1.6 0 3.5v18C0 23.4 1.6 25 3.5 25h38c1.9 0 3.5-1.6 3.5-3.5v-18C45 1.6 43.4 0 41.5 0zM11.8 17.3H9.6V7.7h2.2v9.6zm6.6 0h-2.1v-1c-.7.8-1.7 1.2-2.8 1.2-2.2 0-3.9-1.9-3.9-4.1s1.8-4.1 3.9-4.1c1.1 0 2.1.4 2.8 1.2V9.4h2.1v7.9zm6.1 0h-2.3l-2.5-3.2v3.2h-2.1V7.7h2.1v6l2.3-3h2.5l-2.7 3.3 2.7 3.3zm7.1 0h-2.1v-1c-.7.8-1.7 1.2-2.8 1.2-2.2 0-3.9-1.9-3.9-4.1s1.8-4.1 3.9-4.1c1.1 0 2.1.4 2.8 1.2V9.4h2.1v7.9z"/>
                       </svg>
-                      Pay with Klarna
+                      Authorize with Klarna
                     </>
                   )}
                 </button>
-                <p className="text-xs text-gray-500 text-center mt-2">
-                  Klarna authorizes the full amount now. You are only charged if your case qualifies. Split into 4 interest-free payments.
-                </p>
-                {klarnaError && (
-                  <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
-                    <p className="text-red-700 text-sm">{klarnaError}</p>
-                  </div>
-                )}
               </div>
             )}
 
