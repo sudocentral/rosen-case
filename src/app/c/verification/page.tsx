@@ -430,13 +430,16 @@ export default function CardAuthorizationPage() {
 
       // Step 2: Confirm the PaymentIntent with Stripe.js (redirects to Klarna)
       const stripe = await getStripePromise(publishableKey);
+      const clientSecret = data.data?.clientSecret;
+      if (!clientSecret) {
+        throw new Error("Server did not return a payment intent secret");
+      }
+
       const { error: stripeError } = await stripe.confirmKlarnaPayment(
-        data.data.client_secret,
+        clientSecret,
         {
           payment_method: {
-            billing_details: {
-              email: data.data.customer_email || undefined,
-            },
+            billing_details: {},
           },
           return_url: returnUrl,
         }
