@@ -1257,7 +1257,7 @@ export default function ClientStatusPage() {
     if (status === "collect_letter_fee") {
       const isCardFailure = caseStatus.auto_charge_status?.startsWith("failed_") ||
                              caseStatus.auto_charge_status === "no_payment_method";
-      // Prefer Stripe hosted invoice (supports Klarna + card + Apple/Google Pay)
+      // Prefer Stripe hosted invoice (Klarna option) when available
       // Fall back to /c/verification for card setup + add-ons flow
       const token = typeof window !== "undefined" ? localStorage.getItem("rosen_client_token") : null;
       const paymentHref = caseStatus.hosted_invoice_url
