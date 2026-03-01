@@ -593,7 +593,7 @@ export default function CardAuthorizationPage() {
             {/* DBQ Add-On — VA only */}
             {isVA && (
               <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
-                <h3 className="font-semibold text-gray-900 mb-2">Disability Benefits Questionnaires (DBQs) (Optional)</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">Disability Benefits Questionnaires (Optional)</h3>
                 <div className="text-sm text-gray-600 space-y-3 mb-4">
                   <p>
                     A Disability Benefits Questionnaire (DBQ) is a VA-recognized medical form used to document the diagnosis, severity, symptoms, and functional impact of a specific medical condition for disability compensation purposes.
@@ -817,7 +817,10 @@ export default function CardAuthorizationPage() {
                 </svg>
               </button>
             </div>
-            <p className="text-sm text-gray-600 mb-4">Enter the medical condition for each DBQ you requested.</p>
+            <p className="text-sm text-gray-600 mb-2">Enter the medical condition for each DBQ you requested.</p>
+            <p className="text-sm text-gray-500 mb-4">
+              Not sure which conditions qualify? <a href="https://www.benefits.va.gov/compensation/dbq_publicdbqs.asp" target="_blank" rel="noopener noreferrer" className="text-[#1a5f7a] underline hover:text-[#134a5f]">View the VA&apos;s list of DBQ conditions</a>.
+            </p>
             <div className="space-y-4">
               {Array.from({ length: dbqCount }, (_, i) => (
                 <div key={i}>
