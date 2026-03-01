@@ -609,7 +609,7 @@ export default function CardAuthorizationPage() {
                     return (
                       <ul className="text-blue-800 text-sm space-y-1">
                         <li>A $1.00 hold confirms your card is valid. It is released automatically.</li>
-                        <li>We review your records for free. Most cases do not qualify.</li>
+                        <li>We review your records for free. <span className="bg-amber-200/70 px-1 rounded font-medium">Most cases do not qualify.</span></li>
                         <li>If your case qualifies, we charge <strong>{totalStr} total{breakdown}</strong>, and a physician begins your medical opinion.</li>
                         <li>If your case does not qualify, you pay nothing.</li>
                       </ul>
