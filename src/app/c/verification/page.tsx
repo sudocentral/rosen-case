@@ -742,17 +742,7 @@ export default function CardAuthorizationPage() {
                 </p>
               </div>
 
-              <hr className="border-gray-200" />
 
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">DBQ vs. Medical Opinion</h3>
-                <ul className="space-y-2">
-                  <li><span className="font-semibold">A DBQ</span> documents severity for rating purposes.</li>
-                  <li><span className="font-semibold">A Medical Opinion</span> establishes service connection between your condition and military service.</li>
-                </ul>
-                <p className="mt-2">Some cases benefit from one. Some benefit from both.</p>
-                <p className="font-semibold text-gray-900 mt-1">We determine this during your medical review.</p>
-              </div>
             </div>
             <div className="mt-6">
               <button
