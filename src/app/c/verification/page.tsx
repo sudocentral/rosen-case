@@ -253,8 +253,26 @@ export default function CardAuthorizationPage() {
   const [physicianStatementRequested, setPhysicianStatementRequested] = useState(false);
   const [expeditedDelivery, setExpeditedDelivery] = useState<"STANDARD_7_DAYS" | "EXPEDITED_72_HOURS">("STANDARD_7_DAYS");
 
+  // Klarna authorization state
+  const [klarnaProcessing, setKlarnaProcessing] = useState(false);
+  const [klarnaError, setKlarnaError] = useState<string | null>(null);
+  const [klarnaAuthorized, setKlarnaAuthorized] = useState(false);
+
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    // Check if returning from Klarna redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("klarna_return") === "1") {
+      const piStatus = urlParams.get("redirect_status");
+      if (piStatus === "succeeded" || piStatus === "requires_capture") {
+        setKlarnaAuthorized(true);
+        setLoading(false);
+        // Clean URL
+        window.history.replaceState({}, "", window.location.pathname);
+        return;
+      }
+    }
 
     // Check if card was just submitted (survives page reload / layout redirect)
     const submittedAt = localStorage.getItem("rosen_card_submitted");
@@ -276,7 +294,6 @@ export default function CardAuthorizationPage() {
     }
 
     // Support ?token= URL param (from email links for no-card flow)
-    const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get("token");
     if (tokenFromUrl) {
       localStorage.setItem("rosen_client_token", tokenFromUrl);
@@ -361,6 +378,72 @@ export default function CardAuthorizationPage() {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle Klarna authorization
+  const handleKlarnaAuthorize = async () => {
+    if (!caseId || !publishableKey) return;
+
+    // DBQ conditions gate (same as card flow)
+    if (dbqCount > 0 && dbqConditions.filter(c => c?.trim()).length < dbqCount) {
+      setShowConditionsModal(true);
+      return;
+    }
+
+    setKlarnaProcessing(true);
+    setKlarnaError(null);
+
+    try {
+      const token = localStorage.getItem("rosen_client_token");
+      const returnUrl = `${window.location.origin}/c/verification?token=${token || ""}&klarna_return=1`;
+
+      // Step 1: Create Klarna PaymentIntent via backend
+      const res = await fetch("https://api.sudomanaged.com/api/rosen/public/client/klarna/authorize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-intake-token": token || "",
+        },
+        body: JSON.stringify({
+          case_id: caseId,
+          dbq_count: dbqCount,
+          dbq_conditions: dbqConditions.slice(0, dbqCount),
+          expedited_option: expeditedDelivery === "EXPEDITED_72_HOURS" ? "expedited_72h" : "standard",
+          physician_statement_requested: physicianStatementRequested,
+          return_url: returnUrl,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to start Klarna authorization");
+      }
+
+      // Step 2: Confirm the PaymentIntent with Stripe.js (redirects to Klarna)
+      const stripe = await getStripePromise(publishableKey);
+      const { error: stripeError } = await stripe.confirmKlarnaPayment(
+        data.data.client_secret,
+        {
+          payment_method: {
+            billing_details: {
+              email: data.data.customer_email || undefined,
+            },
+          },
+          return_url: returnUrl,
+        }
+      );
+
+      if (stripeError) {
+        throw new Error(stripeError.message || "Klarna authorization failed");
+      }
+
+      // If we reach here without redirect, authorization completed inline
+      setKlarnaAuthorized(true);
+    } catch (err) {
+      setKlarnaError(err instanceof Error ? err.message : "Something went wrong with Klarna");
+    } finally {
+      setKlarnaProcessing(false);
     }
   };
 
@@ -638,6 +721,68 @@ export default function CardAuthorizationPage() {
             ) : (
               <div className="bg-gray-100 rounded-xl p-6 text-center">
                 <p className="text-gray-600">Loading card form...</p>
+              </div>
+            )}
+
+            {/* Klarna Option */}
+            {!klarnaAuthorized && publishableKey && caseId && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="text-center mb-4">
+                  <span className="text-sm text-gray-500">or</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleKlarnaAuthorize}
+                  disabled={klarnaProcessing}
+                  className={`w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold text-lg transition-all ${
+                    klarnaProcessing
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-[#FFB3C7] text-[#17120F] hover:bg-[#FFA0B8] hover:shadow-lg"
+                  }`}
+                >
+                  {klarnaProcessing ? (
+                    <>
+                      <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Connecting to Klarna...
+                    </>
+                  ) : (
+                    <>
+                      <svg viewBox="0 0 45 25" className="h-5 w-auto" fill="#17120F">
+                        <path d="M41.5 0H3.5C1.6 0 0 1.6 0 3.5v18C0 23.4 1.6 25 3.5 25h38c1.9 0 3.5-1.6 3.5-3.5v-18C45 1.6 43.4 0 41.5 0zM11.8 17.3H9.6V7.7h2.2v9.6zm6.6 0h-2.1v-1c-.7.8-1.7 1.2-2.8 1.2-2.2 0-3.9-1.9-3.9-4.1s1.8-4.1 3.9-4.1c1.1 0 2.1.4 2.8 1.2V9.4h2.1v7.9zm6.1 0h-2.3l-2.5-3.2v3.2h-2.1V7.7h2.1v6l2.3-3h2.5l-2.7 3.3 2.7 3.3zm7.1 0h-2.1v-1c-.7.8-1.7 1.2-2.8 1.2-2.2 0-3.9-1.9-3.9-4.1s1.8-4.1 3.9-4.1c1.1 0 2.1.4 2.8 1.2V9.4h2.1v7.9z"/>
+                      </svg>
+                      Pay with Klarna
+                    </>
+                  )}
+                </button>
+                <p className="text-xs text-gray-500 text-center mt-2">
+                  Klarna authorizes the full amount now. You are only charged if your case qualifies. Split into 4 interest-free payments.
+                </p>
+                {klarnaError && (
+                  <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
+                    <p className="text-red-700 text-sm">{klarnaError}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Klarna Authorization Success */}
+            {klarnaAuthorized && (
+              <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-6 text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-green-900 mb-2">Klarna Authorization Received</h3>
+                <p className="text-green-800 text-sm">
+                  Your payment is authorized. We will only capture the charge if your case qualifies after physician review. If you do not qualify, the authorization is released automatically.
+                </p>
+                <a href="/c/status" className="inline-block mt-4 px-6 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
+                  View Case Status
+                </a>
               </div>
             )}
 
