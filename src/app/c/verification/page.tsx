@@ -275,7 +275,14 @@ export default function CardAuthorizationPage() {
       localStorage.removeItem("rosen_card_submitted");
     }
 
-    const token = localStorage.getItem("rosen_client_token");
+    // Support ?token= URL param (from email links for no-card flow)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get("token");
+    if (tokenFromUrl) {
+      localStorage.setItem("rosen_client_token", tokenFromUrl);
+    }
+
+    const token = tokenFromUrl || localStorage.getItem("rosen_client_token");
     const storedCaseId = localStorage.getItem("rosen_case_id");
 
     if (!token) {
