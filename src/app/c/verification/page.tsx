@@ -194,7 +194,7 @@ function SetupForm({ clientSecret, caseId, onSuccess, dbqCount, dbqConditions, o
             if (dbqCount > 0) parts.push(`${dbqCount} DBQ${dbqCount > 1 ? "s" : ""}`);
             if (expeditedCents > 0) parts.push("Expedited 72 hours");
             const breakdown = totalCents > baseCents ? ` (${parts.join(" + ")})` : "";
-            return `I authorize a temporary $1.00 card verification charge today (this will drop off). If I qualify after review, I authorize Sudo Central to charge ${totalStr} total${breakdown} for the physician-authored medical opinion. If I do not qualify, I will not be charged. I understand all services are non-refundable once approved and processing begins.`;
+            return `I authorize a temporary $1.00 card verification charge today (this will drop off). If I qualify after review, I authorize Rosen Experts to charge ${totalStr} total${breakdown} for the physician-authored medical opinion. If I do not qualify, I will not be charged. I understand all services are non-refundable once approved and processing begins.`;
           })()}
         </span>
       </label>
