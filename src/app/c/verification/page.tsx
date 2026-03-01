@@ -576,16 +576,6 @@ export default function CardAuthorizationPage() {
               </div>
             </div>
 
-            {/* Card Verification Section */}
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                Card Verification (Temporary $1 Hold)
-              </h2>
-              <p className="text-gray-600 text-sm">
-                A temporary $1.00 hold verifies your card is valid. It is released automatically. You are only charged if your case qualifies.
-              </p>
-            </div>
-
             {/* How it works */}
             <div className="bg-blue-50 rounded-xl p-6 mb-8">
               <div className="flex items-start gap-4">
