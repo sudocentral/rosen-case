@@ -64,6 +64,8 @@ function VerifyContent() {
         let destination = "/c/status";
         if (data.required_step === "files") {
           destination = "/c/upload";
+        } else if (data.required_step === "card") {
+          destination = "/c/verification";
         } else if (data.required_step === "dob_description") {
           destination = "/c/statement";
         }
