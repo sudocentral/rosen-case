@@ -31,6 +31,7 @@ interface ExistingFile {
   contentType: string;
   fileSize: number;
   status: string;
+  verified?: boolean;
   pdfRequiresPassword?: boolean;
 }
 
@@ -758,8 +759,11 @@ export default function UploadPage() {
 
       const { uploadUrl, documentId } = presignData.data;
 
-      // Upload to S3 with progress tracking
-      await new Promise<void>((resolve, reject) => {
+      // Upload to S3 with progress tracking and retry
+      const maxS3Retries = 2;
+      let s3Attempt = 0;
+
+      const doS3Upload = (): Promise<void> => new Promise<void>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
 
         xhr.upload.onprogress = (e) => {
@@ -775,16 +779,38 @@ export default function UploadPage() {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve();
           } else {
-            reject(new Error("Upload failed"));
+            const detail = xhr.status === 403 ? "Access denied (signature error)"
+                         : xhr.status === 0 ? "Network error"
+                         : `Server error (${xhr.status})`;
+            console.error(`[upload] S3 PUT failed for "${uploadFile.file.name}": status=${xhr.status}, response=${xhr.responseText?.slice(0, 200)}`);
+            reject(new Error(`Upload failed for "${uploadFile.file.name}": ${detail}`));
           }
         };
 
-        xhr.onerror = () => reject(new Error("Upload failed"));
+        xhr.onerror = () => {
+          console.error(`[upload] S3 PUT network error for "${uploadFile.file.name}"`);
+          reject(new Error(`Network error uploading "${uploadFile.file.name}". Check your connection and try again.`));
+        };
 
         xhr.open("PUT", uploadUrl);
         xhr.setRequestHeader("Content-Type", uploadFile.file.type);
         xhr.send(uploadFile.file);
       });
+
+      while (true) {
+        try {
+          await doS3Upload();
+          break;
+        } catch (s3Err) {
+          s3Attempt++;
+          if (s3Attempt > maxS3Retries) throw s3Err;
+          console.log(`[upload] Retrying S3 PUT for "${uploadFile.file.name}" (attempt ${s3Attempt + 1}/${maxS3Retries + 1})`);
+          setFiles((prev) =>
+            prev.map((f) => f.id === uploadFile.id ? { ...f, progress: 0 } : f)
+          );
+          await new Promise(r => setTimeout(r, 1000 * s3Attempt));
+        }
+      }
 
       // Confirm upload
       const confirmResponse = await fetch(`${API_URL}/upload/confirm/${documentId}`, {
@@ -850,7 +876,9 @@ export default function UploadPage() {
   // Compute totals
   const pendingCount = files.filter((f) => f.status === "pending").length;
   const uploadedNewFiles = files.filter((f) => f.status === "ready");
-  const allUploadedFiles = [...existingFiles, ...uploadedNewFiles.map(f => ({
+  const verifiedExistingFiles = existingFiles.filter(f => f.verified !== false && f.status === "uploaded");
+  const pendingExistingFiles = existingFiles.filter(f => f.status === "pending");
+  const allUploadedFiles = [...verifiedExistingFiles, ...uploadedNewFiles.map(f => ({
     id: f.documentId || f.id,
     filename: f.file.name,
     contentType: f.file.type,
@@ -1121,12 +1149,37 @@ export default function UploadPage() {
               </div>
             )}
 
+            {/* Pending files warning (orphaned/unverified uploads) */}
+            {pendingExistingFiles.length > 0 && (
+              <div className="mt-8">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-amber-800 font-medium">
+                    {pendingExistingFiles.length} file{pendingExistingFiles.length > 1 ? "s" : ""} failed to upload. Please remove and re-upload.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {pendingExistingFiles.map((file) => (
+                    <FileRow
+                      key={file.id}
+                      id={file.id}
+                      filename={file.filename}
+                      fileSize={formatFileSize(file.fileSize)}
+                      status="error"
+                      progress={0}
+                      error="Upload incomplete — remove and re-upload this file"
+                      onRemove={() => excludeExistingFile(file.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Uploaded Files (ready for review) */}
             {allUploadedFiles.length > 0 && (
               <div className="mt-8">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Uploaded Files ({allUploadedFiles.length})</h2>
                 <div className="space-y-3">
-                  {existingFiles.map((file) => (
+                  {verifiedExistingFiles.map((file) => (
                     <FileRow
                       key={file.id}
                       id={file.id}
