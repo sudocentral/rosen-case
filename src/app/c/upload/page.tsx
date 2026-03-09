@@ -746,7 +746,7 @@ export default function UploadPage() {
         },
         body: JSON.stringify({
           filename: uploadFile.file.name,
-          contentType: uploadFile.file.type,
+          contentType: uploadFile.file.type || "application/octet-stream",
           fileSize: uploadFile.file.size,
         }),
       });
@@ -759,8 +759,13 @@ export default function UploadPage() {
 
       const { uploadUrl, documentId } = presignData.data;
 
+      // Content-Type must match what was signed in the presigned URL.
+      // If browser returns empty file.type, backend falls back to application/octet-stream,
+      // so the PUT must send the same value or S3 returns 403.
+      const resolvedContentType = uploadFile.file.type || "application/octet-stream";
+
       // Upload to S3 with progress tracking and retry
-      const maxS3Retries = 2;
+      const maxS3Retries = 4;
       let s3Attempt = 0;
 
       const doS3Upload = (): Promise<void> => new Promise<void>((resolve, reject) => {
@@ -793,7 +798,7 @@ export default function UploadPage() {
         };
 
         xhr.open("PUT", uploadUrl);
-        xhr.setRequestHeader("Content-Type", uploadFile.file.type);
+        xhr.setRequestHeader("Content-Type", resolvedContentType);
         xhr.send(uploadFile.file);
       });
 
@@ -804,11 +809,15 @@ export default function UploadPage() {
         } catch (s3Err) {
           s3Attempt++;
           if (s3Attempt > maxS3Retries) throw s3Err;
-          console.log(`[upload] Retrying S3 PUT for "${uploadFile.file.name}" (attempt ${s3Attempt + 1}/${maxS3Retries + 1})`);
+          // Exponential backoff with jitter: 1-2s, 2-4s, 4-8s, 8-16s
+          const baseDelay = Math.pow(2, s3Attempt) * 1000;
+          const jitter = Math.random() * baseDelay;
+          const delay = baseDelay + jitter;
+          console.log(`[upload] Retrying S3 PUT for "${uploadFile.file.name}" (attempt ${s3Attempt + 1}/${maxS3Retries + 1}, backoff ${Math.round(delay)}ms)`);
           setFiles((prev) =>
             prev.map((f) => f.id === uploadFile.id ? { ...f, progress: 0 } : f)
           );
-          await new Promise(r => setTimeout(r, 1000 * s3Attempt));
+          await new Promise(r => setTimeout(r, delay));
         }
       }
 
