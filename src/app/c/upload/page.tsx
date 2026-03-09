@@ -839,6 +839,8 @@ export default function UploadPage() {
     }
   };
 
+  const UPLOAD_CONCURRENCY = 3;
+
   const uploadAllFiles = async () => {
     const pendingFiles = files.filter((f) => f.status === "pending");
     if (pendingFiles.length === 0) return;
@@ -847,9 +849,22 @@ export default function UploadPage() {
     setError("");
     setSecureComplete(false); // Reset secure state for new uploads
 
-    for (const file of pendingFiles) {
-      await uploadFile(file);
-    }
+    // Concurrency-limited parallel upload: max UPLOAD_CONCURRENCY files at once
+    let nextIndex = 0;
+    const results: { file: UploadFile; documentId: string | undefined }[] = [];
+
+    const worker = async () => {
+      while (nextIndex < pendingFiles.length) {
+        const idx = nextIndex++;
+        const file = pendingFiles[idx];
+        const documentId = await uploadFile(file);
+        results.push({ file, documentId });
+      }
+    };
+
+    // Spawn workers up to concurrency limit (or file count if smaller)
+    const workerCount = Math.min(UPLOAD_CONCURRENCY, pendingFiles.length);
+    await Promise.allSettled(Array.from({ length: workerCount }, () => worker()));
 
     setIsUploading(false);
     // Clear completed local uploads - they will now be in existingFiles from API
@@ -1131,6 +1146,23 @@ export default function UploadPage() {
                     </button>
                   )}
                 </div>
+
+                {/* Batch progress summary during upload */}
+                {isUploading && (() => {
+                  const uploading = files.filter(f => f.status === "uploading").length;
+                  const completed = files.filter(f => f.status === "ready").length;
+                  const failed = files.filter(f => f.status === "error").length;
+                  const queued = files.filter(f => f.status === "pending").length;
+                  const total = uploading + completed + failed + queued;
+                  return total > 1 ? (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 flex items-center gap-4 text-sm">
+                      <span className="text-blue-800 font-medium">{completed + failed}/{total} complete</span>
+                      {uploading > 0 && <span className="text-blue-600">{uploading} uploading</span>}
+                      {queued > 0 && <span className="text-gray-500">{queued} queued</span>}
+                      {failed > 0 && <span className="text-red-600">{failed} failed</span>}
+                    </div>
+                  ) : null;
+                })()}
 
                 <div className="space-y-3">
                   {files.filter(f => f.status !== "ready").map((file) => (
