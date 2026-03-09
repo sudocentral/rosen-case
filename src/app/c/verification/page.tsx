@@ -19,6 +19,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import IntakeStepper from "@/components/IntakeStepper";
+import { trackEvent } from "@/components/Analytics";
 import { PageListenButton } from "@/ui/ListenButton";
 
 // Minimal brand header - logo only, no navigation
@@ -472,6 +473,7 @@ export default function CardAuthorizationPage() {
     window.scrollTo(0, 0);
     setSuccess(true);
     setLoading(false);
+    trackEvent.nexusLetterConversion();
 
     // Clear intake draft from localStorage - intake is complete
     const token = localStorage.getItem("rosen_client_token");

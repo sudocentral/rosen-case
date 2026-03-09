@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import StartListenButton from "../start/StartListenButton";
+import StartListenButton from "@/components/StartListenButton";
 
 // Minimal brand header - logo only, no navigation
 function MinimalHeader() {

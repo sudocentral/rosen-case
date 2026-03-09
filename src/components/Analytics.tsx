@@ -160,6 +160,31 @@ export const trackEvent = {
     });
   },
 
+
+  /**
+   * Fire Google Ads conversion — Nexus Letter (VA)
+   * GA4 event name imported as a conversion in Google Ads
+   */
+  nexusLetterConversion: (amountDollars?: number) => {
+    if (typeof window === "undefined") return;
+    window.gtag?.("event", "nexus_letter_thankyou_page_view", {
+      value: amountDollars,
+      currency: "USD",
+    });
+  },
+
+  /**
+   * Fire Google Ads conversion — IMO (legal/insurance/SSDI)
+   * GA4 event name imported as a conversion in Google Ads
+   */
+  imoConversion: (amountDollars?: number) => {
+    if (typeof window === "undefined") return;
+    window.gtag?.("event", "imo_thankyou_page_view", {
+      value: amountDollars,
+      currency: "USD",
+    });
+  },
+
   /**
    * Track page view (called automatically by component)
    */
