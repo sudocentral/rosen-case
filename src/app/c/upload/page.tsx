@@ -140,7 +140,7 @@ export default function UploadPage() {
       ? (localStorage.getItem("rosen_client_token") || localStorage.getItem("rosen_invite_token"))
       : null;
     if (!storedToken) {
-      router.push("/start");
+      router.push("/welcome");
       return;
     }
     setToken(storedToken);
@@ -594,9 +594,16 @@ export default function UploadPage() {
         return;
       }
 
-      // Handle FAIL = hard stop (show error, allow retry)
+      // Handle TIMEOUT = retryable processing delay (distinct from hard rejection)
+      if (data.status === "TIMEOUT") {
+        setSentinelError("File processing is taking longer than expected. This is not an error with your files — please try again in a moment.");
+        setSecuringFiles(false);
+        return;
+      }
+
+      // Handle FAIL = hard stop (file-level issue, show error, allow retry)
       if (data.status === "FAIL") {
-        setSentinelError("Some files couldn't be processed. You can remove them and try uploading again.");
+        setSentinelError("Some files couldn't be processed. You can remove the problem files and try uploading again.");
         setSecuringFiles(false);
         await loadExistingFiles(token);
         return;
@@ -689,6 +696,13 @@ export default function UploadPage() {
         const files = uniqueNames.map(f => ({ filename: f }));
         setSentinelPasswordFiles(files);
         setSentinelError("Incorrect password. Please try again.");
+        setSecuringFiles(false);
+        return;
+      }
+
+      // Handle TIMEOUT = retryable processing delay
+      if (data.status === "TIMEOUT") {
+        setSentinelError("File processing is taking longer than expected. This is not an error with your files — please try again in a moment.");
         setSecuringFiles(false);
         return;
       }
@@ -900,7 +914,11 @@ export default function UploadPage() {
   // Compute totals
   const pendingCount = files.filter((f) => f.status === "pending").length;
   const uploadedNewFiles = files.filter((f) => f.status === "ready");
-  const verifiedExistingFiles = existingFiles.filter(f => f.verified !== false && f.status === "uploaded");
+  // Visible file states: show all non-excluded, non-pending files that the backend considers valid.
+  // Backend may return status "uploaded", "available", "processed", or other valid terminal states.
+  // Only hide: "pending" (incomplete upload) and "excluded" (removed by user/system).
+  const HIDDEN_STATUSES = new Set(["pending", "excluded"]);
+  const verifiedExistingFiles = existingFiles.filter(f => f.verified !== false && !HIDDEN_STATUSES.has(f.status));
   const pendingExistingFiles = existingFiles.filter(f => f.status === "pending");
   const allUploadedFiles = [...verifiedExistingFiles, ...uploadedNewFiles.map(f => ({
     id: f.documentId || f.id,
@@ -1288,8 +1306,30 @@ export default function UploadPage() {
                   </div>
                 )}
 
-                {/* Sentinel error - calm message with retry option */}
-                {sentinelError && !securingFiles && (
+                {/* Sentinel error - timeout (retryable) shown as calm blue, file issues as amber warning */}
+                {sentinelError && !securingFiles && sentinelError.includes("taking longer than expected") && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="font-medium text-blue-900">Processing delay</p>
+                        <p className="text-sm text-blue-700 mt-1">{sentinelError}</p>
+                        <button
+                          onClick={() => {
+                            setSentinelError("");
+                            runSentinelPostprocess();
+                          }}
+                          className="mt-3 text-sm font-medium text-[#1a5f7a] hover:underline"
+                        >
+                          Retry now
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {sentinelError && !securingFiles && !sentinelError.includes("taking longer than expected") && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div className="flex items-start gap-3">
                       <svg className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1642,13 +1682,12 @@ export default function UploadPage() {
                       setSentinelPasswords({});
                       setSentinelError("");
                       setPasswordError("");
-                      setRemovedProtectedBanner("Protected files removed. You can continue.");
+                      setRemovedProtectedBanner("Protected files removed. Re-validating remaining files...");
                       setRemovingProtectedFiles(false);
-                      // Set secureComplete directly — do NOT re-call postprocess
-                      // because backend may still see the encrypted file and return
-                      // NEEDS_PASSWORD, which would re-open this modal
-                      setSecureComplete(true);
-                      setSecuringFiles(false);
+                      // FIX C-6: Must re-run postprocess to validate remaining files.
+                      // Previous code set secureComplete=true directly, bypassing validation.
+                      // Now we re-validate so the remaining file set is honestly checked.
+                      runSentinelPostprocess();
                     }}
                     disabled={removingProtectedFiles}
                     className="flex-1 px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
