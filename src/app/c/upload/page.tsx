@@ -33,6 +33,9 @@ interface ExistingFile {
   status: string;
   verified?: boolean;
   pdfRequiresPassword?: boolean;
+  // Phase 2: per-file intake truth from backend
+  security_disposition?: "secure" | "needs_password" | "quarantined" | "processing_degraded" | "pending_scan" | string;
+  security_message?: string;
 }
 
 const ALLOWED_TYPES = [
@@ -555,7 +558,7 @@ export default function UploadPage() {
       console.log("[postprocess] response:", text);
 
       // AUTHORITATIVE CONTRACT: { ok, job_id, status, files?, code?, blocked_files?, user_message?, failure_code?, failure_message? }
-      // Valid statuses: PROCESSING | NEEDS_PASSWORD | FAIL | TIMEOUT | DOC_PASSWORD_REQUIRED
+      // Valid statuses: PROCESSING | ACCEPTED_DEGRADED | NEEDS_PASSWORD | FAIL | TIMEOUT | DOC_PASSWORD_REQUIRED | QUARANTINED
       let data: { ok?: boolean; job_id?: string | null; status?: string; files?: string[]; code?: string; blocked_files?: string[]; error?: string; user_message?: string; failure_code?: string; failure_message?: string } | null = null;
       try {
         data = text ? JSON.parse(text) : null;
@@ -583,6 +586,29 @@ export default function UploadPage() {
         return;
       }
 
+      // Handle ACCEPTED_DEGRADED = files accepted into intake, but some processing is delayed/degraded
+      // Veteran can continue — their records are safe. Processing will catch up.
+      if (data.status === "ACCEPTED_DEGRADED") {
+        setSecureComplete(true);
+        setSentinelPasswordFiles([]);
+        setSecuringFiles(false);
+        await loadExistingFiles(token);
+        await fetchSentinelMetadata();
+        return;
+      }
+
+      // Handle QUARANTINED = one or more files blocked for true security reasons
+      if (data.status === "QUARANTINED") {
+        const fileNames = (data.files || data.blocked_files || []).join(", ");
+        const detail = data.user_message || (fileNames
+          ? `The following file(s) were blocked for security reasons: ${fileNames}. Your other files are safe. Please contact support if you believe this is an error.`
+          : "A file was blocked for security reasons. Your other files are safe.");
+        setSentinelError(detail);
+        setSecuringFiles(false);
+        await loadExistingFiles(token);
+        return;
+      }
+
       // Handle NEEDS_PASSWORD = encrypted file found (freeze UI, show password modal)
       if (data.status === "NEEDS_PASSWORD") {
         const rawFiles = (data.files || []).map(f => typeof f === "string" ? f : f);
@@ -603,8 +629,16 @@ export default function UploadPage() {
 
       // Handle FAIL = hard stop (file-level issue, show error, allow retry)
       // Use Sentinel's user_message if available, then failure_message, then generic fallback
+      // If blocked_files present, name the problem files specifically (FIX C2: no batch fog)
       if (data.status === "FAIL") {
-        const detail = data.user_message || data.failure_message || "Some files couldn't be processed. You can remove the problem files and try uploading again.";
+        const problemFiles = data.blocked_files || data.files || [];
+        let detail = data.user_message || data.failure_message || "";
+        if (!detail && problemFiles.length > 0) {
+          detail = `Problem file${problemFiles.length > 1 ? "s" : ""}: ${problemFiles.join(", ")}. You can remove ${problemFiles.length > 1 ? "them" : "it"} and try again.`;
+        }
+        if (!detail) {
+          detail = "Some files couldn't be processed. You can remove the problem files and try uploading again.";
+        }
         setSentinelError(detail);
         setSecuringFiles(false);
         await loadExistingFiles(token);
@@ -687,6 +721,17 @@ export default function UploadPage() {
         setSecuringFiles(false);
         await loadExistingFiles(token);
         // Fetch Sentinel metadata for decision gate
+        await fetchSentinelMetadata();
+        return;
+      }
+
+      // Handle ACCEPTED_DEGRADED = files accepted, processing delayed (passwords worked for what they could)
+      if (data.status === "ACCEPTED_DEGRADED") {
+        setSecureComplete(true);
+        setSentinelPasswordFiles([]);
+        setSentinelPasswords({});
+        setSecuringFiles(false);
+        await loadExistingFiles(token);
         await fetchSentinelMetadata();
         return;
       }
@@ -967,10 +1012,11 @@ export default function UploadPage() {
   const hasPasswordRequired = existingFiles.some(f => f.pdfRequiresPassword === true);
 
   // Gating rules for Continue button
-  // MUST be SECURE_COMPLETE to continue (Sentinel validated all files)
+  // MUST have accepted intake status (secureComplete set by PROCESSING or ACCEPTED_DEGRADED)
   // MUST pass decision gate (medical records present, case type confirmed)
   // MUST pass DOB mismatch check
   // MUST NOT have any password-required files
+  // Note: ACCEPTED_DEGRADED allows continue — processing catches up later
   const canContinue = totalUploaded > 0 &&
                       pendingCount === 0 &&
                       !isUploading &&
@@ -1247,10 +1293,12 @@ export default function UploadPage() {
                       id={file.id}
                       filename={file.filename}
                       fileSize={formatFileSize(file.fileSize)}
-                      status="ready"
+                      status={file.security_disposition === "quarantined" ? "error" : "ready"}
                       progress={100}
                       pdfRequiresPassword={file.pdfRequiresPassword}
                       converting={securingFiles && !file.contentType?.toLowerCase().includes("pdf")}
+                      securityDisposition={file.security_disposition}
+                      securityMessage={file.security_message}
                       onRemove={() => {
                         if (isEditMode) {
                           setDeleteToast("Uploads are locked after approval. Contact support if you need to add records.");
@@ -1389,7 +1437,22 @@ export default function UploadPage() {
                   </div>
                 )}
 
-                {/* Auto-detect indicator removed - causes UX confusion on existing cases */}
+                {/* Degraded processing banner (non-blocking — files accepted, processing delayed) */}
+                {secureComplete && !securingFiles && !sentinelError && existingFiles.some(f => f.security_disposition === "processing_degraded") && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-center gap-3">
+                      <svg className="w-6 h-6 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="font-medium text-blue-900">Your records are accepted</p>
+                        <p className="text-sm text-blue-700 mt-1">
+                          Some files need extra processing time. You can continue — we will process everything in the background.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* DOB Warning Banner (non-blocking) */}
                 {dobWarning && secureComplete && !securingFiles && !sentinelError && (
@@ -1803,6 +1866,8 @@ interface FileRowProps {
   error?: string;
   pdfRequiresPassword?: boolean;
   converting?: boolean;
+  securityDisposition?: string;
+  securityMessage?: string;
   onRemove?: () => void;
   onUnlock?: () => void;
 }
@@ -1816,6 +1881,8 @@ function FileRow({
   error,
   pdfRequiresPassword,
   converting,
+  securityDisposition,
+  securityMessage,
   onRemove,
   onUnlock,
 }: FileRowProps) {
@@ -1870,6 +1937,32 @@ function FileRow({
             </div>
           )}
 
+          {/* Per-file security/processing status (Phase 2) */}
+          {securityDisposition === "quarantined" && (
+            <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              {securityMessage || "Blocked for security — this file cannot be processed"}
+            </p>
+          )}
+          {securityDisposition === "processing_degraded" && (
+            <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Accepted — processing may be delayed
+            </p>
+          )}
+          {securityDisposition === "pending_scan" && (
+            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Security check in progress
+            </p>
+          )}
+
           {/* Converting to PDF indicator */}
           {converting && !pdfRequiresPassword && (
             <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
@@ -1889,9 +1982,14 @@ function FileRow({
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
           )}
-          {status === "ready" && pdfRequiresPassword && (
+          {status === "ready" && pdfRequiresPassword && !securityDisposition && (
             <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          )}
+          {securityDisposition === "processing_degraded" && (
+            <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           )}
           {status === "error" && (
