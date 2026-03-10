@@ -554,9 +554,9 @@ export default function UploadPage() {
       const text = await response.text();
       console.log("[postprocess] response:", text);
 
-      // AUTHORITATIVE CONTRACT: { ok, job_id, status, files?, code?, blocked_files? }
-      // Valid statuses: PROCESSING | NEEDS_PASSWORD | FAIL | DOC_PASSWORD_REQUIRED
-      let data: { ok?: boolean; job_id?: string | null; status?: string; files?: string[]; code?: string; blocked_files?: string[]; error?: string } | null = null;
+      // AUTHORITATIVE CONTRACT: { ok, job_id, status, files?, code?, blocked_files?, user_message?, failure_code?, failure_message? }
+      // Valid statuses: PROCESSING | NEEDS_PASSWORD | FAIL | TIMEOUT | DOC_PASSWORD_REQUIRED
+      let data: { ok?: boolean; job_id?: string | null; status?: string; files?: string[]; code?: string; blocked_files?: string[]; error?: string; user_message?: string; failure_code?: string; failure_message?: string } | null = null;
       try {
         data = text ? JSON.parse(text) : null;
       } catch (parseErr) {
@@ -602,8 +602,10 @@ export default function UploadPage() {
       }
 
       // Handle FAIL = hard stop (file-level issue, show error, allow retry)
+      // Use Sentinel's user_message if available, then failure_message, then generic fallback
       if (data.status === "FAIL") {
-        setSentinelError("Some files couldn't be processed. You can remove the problem files and try uploading again.");
+        const detail = data.user_message || data.failure_message || "Some files couldn't be processed. You can remove the problem files and try uploading again.";
+        setSentinelError(detail);
         setSecuringFiles(false);
         await loadExistingFiles(token);
         return;
@@ -664,7 +666,7 @@ export default function UploadPage() {
       const text = await response.text();
       console.log("[postprocess with passwords] response:", text);
 
-      let data: { ok?: boolean; job_id?: string | null; status?: string; files?: string[]; code?: string; blocked_files?: string[]; error?: string } | null = null;
+      let data: { ok?: boolean; job_id?: string | null; status?: string; files?: string[]; code?: string; blocked_files?: string[]; error?: string; user_message?: string; failure_code?: string; failure_message?: string } | null = null;
       try {
         data = text ? JSON.parse(text) : null;
       } catch {
@@ -707,9 +709,10 @@ export default function UploadPage() {
         return;
       }
 
-      // Handle FAIL = hard stop
+      // Handle FAIL = hard stop — use Sentinel detail if available
       if (data.status === "FAIL") {
-        setSentinelError("Files couldn't be processed. Please remove and try again.");
+        const detail = data.user_message || data.failure_message || "Files couldn't be processed. Please remove and try again.";
+        setSentinelError(detail);
         setSentinelPasswordFiles([]);
         setSentinelPasswords({});
         setSecuringFiles(false);
