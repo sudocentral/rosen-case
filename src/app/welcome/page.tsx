@@ -68,6 +68,14 @@ export default function LandingPage() {
       if (!response.ok || !data.success) {
         throw new Error(data.error || "We couldn't find a case with that email. Please check the address and try again.");
       }
+
+      // API returns no_case_found when email has no case on file
+      if (data.data?.no_case_found) {
+        setError("We don't have a case on file for that email. You can start a new case below.");
+        setMode("new");
+        return;
+      }
+
       setSuccessType("login");
       setSuccess(true);
     } catch (err) {
