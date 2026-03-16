@@ -147,6 +147,15 @@ function SecureMessageModal({
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (isOpen) {
+      setSent(false);
+      setMessage("");
+      setCategory("question");
+      setError("");
+    }
+  }, [isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || message.length > 4000) return;

@@ -575,6 +575,15 @@ function SecureMessageModal({
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (isOpen) {
+      setSent(false);
+      setMessage("");
+      setCategory("question");
+      setError("");
+    }
+  }, [isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || message.length > 4000) return;
@@ -1281,7 +1290,7 @@ export default function ClientStatusPage() {
         type: "action",
         title: "We Need More Information",
         message: needs_more_info_message || "We need additional documentation to continue reviewing your case.",
-        action: { label: "Upload Additional Records", href: "/c/upload" },
+        action: { label: "Upload Additional Records", href: "/c/upload?edit=1" },
       };
     }
 
@@ -1290,7 +1299,7 @@ export default function ClientStatusPage() {
         type: "action",
         title: "Additional Documents Needed",
         message: needs_more_info_message || "We need additional medical records to complete your review.",
-        action: { label: "Upload Documents", href: "/c/upload" },
+        action: { label: "Upload Documents", href: "/c/upload?edit=1" },
       };
     }
 
@@ -1943,7 +1952,7 @@ export default function ClientStatusPage() {
                 </div>
                 <div className="mt-4">
                   <a
-                    href="/c/upload"
+                    href="/c/upload?edit=1"
                     className="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-medium rounded-lg transition-colors text-sm"
                   >
                     Upload Additional Records
