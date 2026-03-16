@@ -1290,7 +1290,7 @@ export default function ClientStatusPage() {
         type: "action",
         title: "We Need More Information",
         message: needs_more_info_message || "We need additional documentation to continue reviewing your case.",
-        action: { label: "Upload Additional Records", href: "/c/upload?edit=1" },
+        action: { label: "Upload Additional Records", href: "/c/upload/?edit=1" },
       };
     }
 
@@ -1299,7 +1299,7 @@ export default function ClientStatusPage() {
         type: "action",
         title: "Additional Documents Needed",
         message: needs_more_info_message || "We need additional medical records to complete your review.",
-        action: { label: "Upload Documents", href: "/c/upload?edit=1" },
+        action: { label: "Upload Documents", href: "/c/upload/?edit=1" },
       };
     }
 
@@ -1711,7 +1711,7 @@ export default function ClientStatusPage() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Upload Your Medical Records</h1>
             <p className="text-gray-600 mb-8">To begin your free review, please upload your medical records and relevant documents.</p>
-            <a href="/c/upload?edit=1" className="inline-flex items-center gap-2 bg-[#2c8a6e] text-white px-8 py-4 rounded-lg font-semibold hover:bg-[#1e6b55] transition-colors">
+            <a href="/c/upload/?edit=1" className="inline-flex items-center gap-2 bg-[#2c8a6e] text-white px-8 py-4 rounded-lg font-semibold hover:bg-[#1e6b55] transition-colors">
               Upload Medical Records
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -1853,7 +1853,7 @@ export default function ClientStatusPage() {
             <p className="text-gray-600">Track your case progress and manage your documents</p>
             {(caseStatus.status === "intake_in_progress" || caseStatus.determination === "NEEDS_MORE_INFO") && (
               <div className="mt-3 flex flex-wrap items-center gap-4">
-                <a href="/c/upload?edit=1" className="text-sm text-[#1a5f7a] hover:underline">
+                <a href="/c/upload/?edit=1" className="text-sm text-[#1a5f7a] hover:underline">
                   &larr; Edit uploads
                 </a>
                 {/* C3: Resubmit button in single case view */}
@@ -1952,7 +1952,7 @@ export default function ClientStatusPage() {
                 </div>
                 <div className="mt-4">
                   <a
-                    href="/c/upload?edit=1"
+                    href="/c/upload/?edit=1"
                     className="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-medium rounded-lg transition-colors text-sm"
                   >
                     Upload Additional Records
@@ -2119,7 +2119,7 @@ export default function ClientStatusPage() {
                     )}
                   </div>
                   <a
-                    href="/c/upload?edit=1"
+                    href="/c/upload/?edit=1"
                     className="mt-4 w-full flex items-center justify-center gap-2 text-sm text-[#1a5f7a] hover:text-[#134a5f] font-medium py-2 border border-[#1a5f7a] rounded-lg hover:bg-blue-50 transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
