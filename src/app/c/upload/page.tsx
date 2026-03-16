@@ -1515,7 +1515,7 @@ export default function UploadPage() {
                 )}
 
                 <p className="mt-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  Please submit your complete medical records. We are unable to accept partial records or individual pages from a record.
+                  Please submit your complete medical records as PDF files. We are unable to accept partial records, individual pages, or text extractions/data dumps of records.
                 </p>
 
                 <div className="mt-6">
@@ -1565,7 +1565,7 @@ export default function UploadPage() {
                   <svg className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
-                  <span>VA Blue Button Report (medical records summary)</span>
+                  <span>VA Blue Button Report (medical records summary) <a href="https://www.myhealth.va.gov/mhv-portal-web/home/-/asset_publisher/gqwa0adfgkmo/content/user-login" target="_blank" rel="noopener noreferrer" className="text-emerald-600 underline hover:text-emerald-800">Download yours here</a></span>
                 </li>
                 <li className="flex items-start gap-2">
                   <svg className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
