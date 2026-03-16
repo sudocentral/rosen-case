@@ -1515,7 +1515,7 @@ export default function UploadPage() {
                 )}
 
                 <p className="mt-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  Please submit your complete medical records as PDF files. We are unable to accept partial records, individual pages, or text extractions/data dumps of records.
+                  Please submit your complete medical records. We are unable to accept partial records, individual pages, or text extractions/data dumps of records.
                 </p>
 
                 <div className="mt-6">
