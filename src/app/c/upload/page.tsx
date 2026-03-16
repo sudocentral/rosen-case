@@ -50,13 +50,15 @@ const ALLOWED_TYPES = [
   "image/heif",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "text/plain",
   "application/rtf",
   "application/zip",
   "application/x-zip-compressed",
 ];
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 250 * 1024 * 1024; // 250MB
 
 export default function UploadPage() {
   const router = useRouter();
@@ -318,14 +320,14 @@ export default function UploadPage() {
 
   const validateFile = (file: File): string | null => {
     const isZip = file.name.match(/\.zip$/i) || file.type === "application/zip" || file.type === "application/x-zip-compressed";
-    if (!ALLOWED_TYPES.includes(file.type) && !file.name.match(/\.(pdf|jpg|jpeg|png|gif|tiff?|bmp|webp|heic|heif|doc|docx|txt|rtf|zip)$/i)) {
+    if (!ALLOWED_TYPES.includes(file.type) && !file.name.match(/\.(pdf|jpg|jpeg|png|gif|tiff?|bmp|webp|heic|heif|doc|docx|xls|xlsx|txt|rtf|zip)$/i)) {
       if (isZip) {
         return "We couldn't process this ZIP. Please ensure it only contains PDFs, images, or Word documents.";
       }
       return "File type not supported. Please upload PDFs, images, Word documents, or ZIP files.";
     }
     if (file.size > MAX_FILE_SIZE) {
-      return "File is too large. Maximum size is 100MB.";
+      return "File is too large. Maximum size is 250MB.";
     }
     return null;
   };
@@ -471,8 +473,8 @@ export default function UploadPage() {
       setIsDecrypting(true);
     }
 
-    // Calculate timeout to match backend (3s per MB, max 3 min)
-    const timeoutMs = Math.floor(Math.max(30000, Math.min(180000, fileSizeMB * 3000)));
+    // Calculate timeout to match backend (3s per MB, max 10 min)
+    const timeoutMs = Math.floor(Math.max(30000, Math.min(600000, fileSizeMB * 3000)));
 
     try {
       const controller = new AbortController();
@@ -1190,7 +1192,7 @@ export default function UploadPage() {
               <input
                 type="file"
                 multiple
-                accept=".pdf,.jpg,.jpeg,.png,.gif,.tiff,.tif,.bmp,.webp,.heic,.heif,.doc,.docx,.txt,.rtf,.zip"
+                accept=".pdf,.jpg,.jpeg,.png,.gif,.tiff,.tif,.bmp,.webp,.heic,.heif,.doc,.docx,.xls,.xlsx,.txt,.rtf,.zip"
                 onChange={handleFileInput}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
