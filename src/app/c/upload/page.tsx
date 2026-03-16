@@ -1305,14 +1305,7 @@ export default function UploadPage() {
                       converting={securingFiles && !file.contentType?.toLowerCase().includes("pdf")}
                       securityDisposition={file.security_disposition}
                       securityMessage={file.security_message}
-                      onRemove={() => {
-                        if (isEditMode) {
-                          setDeleteToast("Uploads are locked after approval. Contact support if you need to add records.");
-                          setTimeout(() => setDeleteToast(""), 5000);
-                        } else {
-                          excludeExistingFile(file.id);
-                        }
-                      }}
+                      onRemove={isEditMode ? undefined : () => excludeExistingFile(file.id)}
                       onUnlock={file.pdfRequiresPassword ? () => openPasswordModal(file) : undefined}
                     />
                   ))}
