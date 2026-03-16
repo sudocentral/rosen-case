@@ -1576,6 +1576,9 @@ export default function UploadPage() {
                   <span>VA decision letters or denial letters</span>
                 </li>
               </ul>
+              <p className="mt-4 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                Please submit your complete medical records. We are unable to accept partial records or individual pages from a record.
+              </p>
             </div>
           </div>
         </section>
