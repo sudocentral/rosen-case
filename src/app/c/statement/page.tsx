@@ -157,15 +157,18 @@ export default function StatementPage() {
         const filesRes = await fetch(`${API_URL}/files`, {
           headers: { "x-intake-token": storedToken! },
         });
-        if (filesRes.ok) {
-          const filesData = await filesRes.json();
-          const uploadedFiles = (filesData.data?.files || []).filter(
-            (f: { status: string; verified?: boolean }) => f.status === "uploaded" && f.verified !== false
-          );
-          if (uploadedFiles.length === 0) {
-            router.push("/c/upload");
-            return;
-          }
+        if (!filesRes.ok) {
+          // If we can't verify files, redirect to upload — fail closed
+          router.push("/c/upload");
+          return;
+        }
+        const filesData = await filesRes.json();
+        const uploadedFiles = (filesData.data?.files || []).filter(
+          (f: { status: string; verified?: boolean }) => f.status === "uploaded" && f.verified !== false
+        );
+        if (uploadedFiles.length === 0) {
+          router.push("/c/upload");
+          return;
         }
 
         const response = await fetch(`${API_URL}/status`, {

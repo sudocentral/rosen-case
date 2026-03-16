@@ -244,6 +244,7 @@ export default function CardAuthorizationPage() {
   const [publishableKey, setPublishableKey] = useState<string | null>(null);
   const [caseId, setCaseId] = useState<string | null>(null);
   const [hasFiles, setHasFiles] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [serviceType, setServiceType] = useState<string | null>(null);
   const [dbqCount, setDbqCount] = useState(0);
@@ -315,7 +316,7 @@ export default function CardAuthorizationPage() {
     const storedCaseId = localStorage.getItem("rosen_case_id");
 
     if (!token) {
-      router.push("/start");
+      router.push("/welcome");
       return;
     }
 
@@ -332,7 +333,7 @@ export default function CardAuthorizationPage() {
       if (statusRes.status === 401) {
         localStorage.removeItem("rosen_client_token");
         localStorage.removeItem("rosen_case_id");
-        router.push("/start");
+        router.push("/welcome");
         return;
       }
 
@@ -362,7 +363,8 @@ export default function CardAuthorizationPage() {
         : 0;
 
       if (uploadedCount === 0) {
-        // Redirect to upload first
+        // Redirect to upload first — set redirecting to prevent flash of form
+        setRedirecting(true);
         window.location.href = "/c/upload";
         return;
       }
@@ -489,7 +491,7 @@ export default function CardAuthorizationPage() {
     }, 10000);
   }, [router]);
 
-  if (loading) {
+  if (loading || redirecting) {
     return (
       <>
         <main className="min-h-screen bg-gray-50 flex items-center justify-center">
