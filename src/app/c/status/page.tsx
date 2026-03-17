@@ -16,6 +16,7 @@
 
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import CaseThread from "../../../components/CaseThread";
 
 // Minimal brand header - logo only, no navigation
 function MinimalHeader() {
@@ -38,7 +39,6 @@ function MinimalHeader() {
 const API_URL = "https://api.sudomanaged.com/api/rosen/public/client/status";
 const CASES_URL = "https://api.sudomanaged.com/api/rosen/public/client/cases";
 const FILES_URL = "https://api.sudomanaged.com/api/rosen/public/client/files";
-const MESSAGE_URL = "https://api.sudomanaged.com/api/rosen/public/client/message";
 const BASE_API = "https://api.sudomanaged.com/api/rosen/public/client";
 
 interface CaseStatus {
@@ -296,11 +296,7 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
     </svg>
   ),
-  message: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-    </svg>
-  ),
+
   close: (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -557,166 +553,6 @@ function DeleteConfirmModal({
   );
 }
 
-// Secure Message Modal Component
-function SecureMessageModal({
-  isOpen,
-  onClose,
-  caseId,
-  token
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  caseId: string;
-  token: string;
-}) {
-  const [category, setCategory] = useState("question");
-  const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (isOpen) {
-      setSent(false);
-      setMessage("");
-      setCategory("question");
-      setError("");
-    }
-  }, [isOpen]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim() || message.length > 4000) return;
-
-    setSending(true);
-    setError("");
-
-    try {
-      const res = await fetch(MESSAGE_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-intake-token": token,
-        },
-        body: JSON.stringify({
-          case_id: caseId,
-          category,
-          message: message.trim(),
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to send message");
-      }
-
-      setSent(true);
-      setMessage("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send message");
-    } finally {
-      setSending(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-
-        <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-          >
-            {Icons.close}
-          </button>
-
-          {sent ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Message Sent</h3>
-              <p className="text-gray-600 mb-6">
-                We've received your message and will respond within 1-2 business days.
-              </p>
-              <button
-                onClick={onClose}
-                className="bg-[#1a5f7a] text-white px-6 py-2 rounded-lg hover:bg-[#134a5f] transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-[#1a5f7a]/10 rounded-full flex items-center justify-center">
-                  {Icons.message}
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Send a Secure Message</h3>
-                  <p className="text-sm text-gray-500">Your message is encrypted and attached to your case</p>
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent"
-                  >
-                    <option value="question">Question about my case</option>
-                    <option value="upload">Upload or document issue</option>
-                    <option value="billing">Billing inquiry</option>
-                    <option value="status">Status update request</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows={5}
-                    maxLength={4000}
-                    placeholder="How can we help you?"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent resize-none"
-                    required
-                  />
-                  <p className="text-xs text-gray-400 mt-1">{message.length}/4000 characters</p>
-                </div>
-
-                {error && (
-                  <div className="bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm">
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={sending || !message.trim()}
-                  className="w-full bg-[#1a5f7a] text-white py-3 rounded-lg font-medium hover:bg-[#134a5f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {sending ? "Sending..." : "Send Message"}
-                </button>
-              </form>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // Progress Tracker Component
 function ProgressTracker({ currentStage }: { currentStage: number }) {
   return (
@@ -770,7 +606,7 @@ export default function ClientStatusPage() {
   const [needsUpload, setNeedsUpload] = useState(false);
   const [needsCard, setNeedsCard] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [showMessageModal, setShowMessageModal] = useState(false);
+
   const [token, setToken] = useState("");
   // Multi-case roster state
   const [cases, setCases] = useState<CaseSummary[]>([]);
@@ -2136,20 +1972,8 @@ export default function ClientStatusPage() {
               {/* Progress Tracker */}
               <ProgressTracker currentStage={currentStage} />
 
-              {/* Help Card */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Need Help?</h3>
-                <button
-                  onClick={() => setShowMessageModal(true)}
-                  className="w-full flex items-center justify-center gap-2 bg-[#1a5f7a] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#134a5f] transition-colors"
-                >
-                  {Icons.message}
-                  Send a Secure Message
-                </button>
-                <p className="text-xs text-gray-500 text-center mt-3">
-                  We typically respond within 1-2 business days
-                </p>
-              </div>
+              {/* Secure Messages Thread */}
+              <CaseThread token={token} caseId={caseStatus.case_id} />
 
               {/* Security Footer */}
               <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
@@ -2167,14 +1991,6 @@ export default function ClientStatusPage() {
           </div>
         </div>
       </main>
-
-      {/* Secure Message Modal */}
-      <SecureMessageModal
-        isOpen={showMessageModal}
-        onClose={() => setShowMessageModal(false)}
-        caseId={caseStatus.case_id}
-        token={token}
-      />
 
       {/* Toast notification */}
       {toastMessage && (

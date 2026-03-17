@@ -12,11 +12,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ClientPortalHeader from "@/components/ClientPortalHeader";
+import CaseThread from "../../../components/CaseThread";
 
 
 const API_URL = "https://api.sudomanaged.com/api/rosen/public/client/status";
 const FILES_URL = "https://api.sudomanaged.com/api/rosen/public/client/files";
-const MESSAGE_URL = "https://api.sudomanaged.com/api/rosen/public/client/message";
 
 interface CaseStatus {
   case_id: string;
@@ -117,177 +117,9 @@ const AlertIcon = () => (
   </svg>
 );
 
-const MessageIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-  </svg>
-);
 
-const CloseIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-  </svg>
-);
 
-// Secure Message Modal Component
-function SecureMessageModal({
-  isOpen,
-  onClose,
-  caseId,
-  token
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  caseId: string;
-  token: string;
-}) {
-  const [category, setCategory] = useState("question");
-  const [message, setMessage] = useState("");
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (isOpen) {
-      setSent(false);
-      setMessage("");
-      setCategory("question");
-      setError("");
-    }
-  }, [isOpen]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim() || message.length > 4000) return;
-
-    setSending(true);
-    setError("");
-
-    try {
-      const res = await fetch(MESSAGE_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-intake-token": token,
-        },
-        body: JSON.stringify({
-          case_id: caseId,
-          category,
-          message: message.trim(),
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to send message");
-      }
-
-      setSent(true);
-      setMessage("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send message");
-    } finally {
-      setSending(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-
-        <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-          >
-            <CloseIcon />
-          </button>
-
-          {sent ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Message Sent</h3>
-              <p className="text-gray-600 mb-6">
-                We've received your message and will respond within 1-2 business days.
-              </p>
-              <button
-                onClick={onClose}
-                className="bg-[#1a5f7a] text-white px-6 py-2 rounded-lg hover:bg-[#134a5f] transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-[#1a5f7a]/10 rounded-full flex items-center justify-center">
-                  <MessageIcon />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Send a Secure Message</h3>
-                  <p className="text-sm text-gray-500">Your message is encrypted and attached to your case</p>
-                </div>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent"
-                  >
-                    <option value="question">Question about my case</option>
-                    <option value="upload">Upload or document issue</option>
-                    <option value="billing">Billing inquiry</option>
-                    <option value="status">Status update request</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows={5}
-                    maxLength={4000}
-                    placeholder="How can we help you?"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1a5f7a] focus:border-transparent resize-none"
-                    required
-                  />
-                  <p className="text-xs text-gray-400 mt-1">{message.length}/4000 characters</p>
-                </div>
-
-                {error && (
-                  <div className="bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm">
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={sending || !message.trim()}
-                  className="w-full bg-[#1a5f7a] text-white py-3 rounded-lg font-medium hover:bg-[#134a5f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {sending ? "Sending..." : "Send Message"}
-                </button>
-              </form>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function PortalPage() {
   const router = useRouter();
@@ -296,7 +128,7 @@ export default function PortalPage() {
   const [caseStatus, setCaseStatus] = useState<CaseStatus | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [token, setToken] = useState("");
-  const [showMessageModal, setShowMessageModal] = useState(false);
+
 
   useEffect(() => {
     // Check for token in URL first (magic link from email)
@@ -570,32 +402,14 @@ export default function PortalPage() {
                 </div>
               )}
 
-              {/* Help Section */}
-              <div className="bg-slate-50 rounded-xl border border-slate-200 p-6">
-                <h3 className="text-sm font-semibold text-slate-700 mb-3">Need Help?</h3>
-                <p className="text-sm text-slate-600 mb-4">
-                  Questions about your case? Send us a secure message.
-                </p>
-                <button
-                  onClick={() => setShowMessageModal(true)}
-                  className="inline-flex items-center gap-2 text-[#1a5f7a] font-medium text-sm hover:underline"
-                >
-                  <MessageIcon />
-                  Send a Secure Message
-                </button>
-              </div>
+              {/* Secure Messages Thread */}
+              <CaseThread token={token} caseId={caseStatus.case_id} />
             </div>
           </div>
         </div>
       </main>
 
-      {/* Secure Message Modal */}
-      <SecureMessageModal
-        isOpen={showMessageModal}
-        onClose={() => setShowMessageModal(false)}
-        caseId={caseStatus.case_id}
-        token={token}
-      />
+
     </>
   );
 }
