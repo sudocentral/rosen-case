@@ -1972,8 +1972,8 @@ export default function ClientStatusPage() {
               {/* Progress Tracker */}
               <ProgressTracker currentStage={currentStage} />
 
-              {/* Documents from Team */}
-              {uploadedFiles.length > 0 && (
+              {/* Documents from Team — only show ops-uploaded files (supporting_document, final_pdf) */}
+              {uploadedFiles.filter((f: any) => f.fileType === "supporting_document" || f.fileType === "final_pdf").length > 0 && (
                 <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden", background: "#fff" }}>
                   <div style={{ padding: "12px 16px", borderBottom: "1px solid #e2e8f0", background: "#f0fdf4" }}>
                     <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "#166534" }}>
@@ -1984,7 +1984,7 @@ export default function ClientStatusPage() {
                     </p>
                   </div>
                   <div style={{ padding: "12px 16px" }}>
-                    {uploadedFiles.map((file: any) => (
+                    {uploadedFiles.filter((f: any) => f.fileType === "supporting_document" || f.fileType === "final_pdf").map((file: any) => (
                       <div key={file.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
                           <svg style={{ width: "16px", height: "16px", color: "#64748b", flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
