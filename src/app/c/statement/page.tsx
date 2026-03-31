@@ -121,7 +121,7 @@ export default function StatementPage() {
   const [isLoadingApi, setIsLoadingApi] = useState(true);
 
   const MIN_STATEMENT_LENGTH = 100;
-  const MAX_STATEMENT_LENGTH = 10000;
+  const MAX_STATEMENT_LENGTH = 100000;
 
   // Save draft whenever statement changes
   const updateDraft = useCallback((newStatement: string) => {
