@@ -1972,6 +1972,49 @@ export default function ClientStatusPage() {
               {/* Progress Tracker */}
               <ProgressTracker currentStage={currentStage} />
 
+              {/* Documents from Team */}
+              {uploadedFiles.length > 0 && (
+                <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", overflow: "hidden", background: "#fff" }}>
+                  <div style={{ padding: "12px 16px", borderBottom: "1px solid #e2e8f0", background: "#f0fdf4" }}>
+                    <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "#166534" }}>
+                      Your Documents
+                    </h3>
+                    <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#15803d" }}>
+                      Files available for download
+                    </p>
+                  </div>
+                  <div style={{ padding: "12px 16px" }}>
+                    {uploadedFiles.map((file: any) => (
+                      <div key={file.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+                          <svg style={{ width: "16px", height: "16px", color: "#64748b", flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span style={{ fontSize: "13px", color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{file.filename}</span>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await fetch(`https://api.sudomanaged.com/api/rosen/public/client/file/${file.id}/download`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json", "x-intake-token": token },
+                              });
+                              const data = await res.json();
+                              if (data.success && data.url) {
+                                window.open(data.url, "_blank");
+                              }
+                            } catch { /* silent */ }
+                          }}
+                          style={{ fontSize: "12px", color: "#0f766e", fontWeight: 500, background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}
+                        >
+                          Download
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Secure Messages Thread */}
               <CaseThread token={token} caseId={caseStatus.case_id} />
 
