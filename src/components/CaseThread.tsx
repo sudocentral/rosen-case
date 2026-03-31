@@ -161,7 +161,34 @@ export default function CaseThread({ token, caseId }: { token: string; caseId: s
               </div>
               {group.msgs.map((msg) => {
                 const isClient = msg.sender_role === "client";
+                const isSystem = msg.sender_role === "system";
                 const isPending = msg.id.startsWith("pending-");
+
+                if (isSystem) {
+                  return (
+                    <div key={msg.id} style={{ display: "flex", justifyContent: "center", marginBottom: "8px" }}>
+                      <div
+                        style={{
+                          maxWidth: "85%",
+                          padding: "10px 16px",
+                          borderRadius: "8px",
+                          background: "#eff6ff",
+                          border: "1px solid #bfdbfe",
+                          fontSize: "13px",
+                          lineHeight: "1.4",
+                          color: "#1e40af",
+                          textAlign: "center",
+                        }}
+                      >
+                        <div style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{msg.message}</div>
+                        <div style={{ fontSize: "10px", marginTop: "4px", opacity: 0.7 }}>
+                          {formatTime(msg.created_at)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div
                     key={msg.id}

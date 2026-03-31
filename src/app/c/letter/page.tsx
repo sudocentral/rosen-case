@@ -131,6 +131,11 @@ function LetterContent() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expired, setExpired] = useState(false);
+  const [emailHint, setEmailHint] = useState<string | null>(null);
+  const [newLinkSent, setNewLinkSent] = useState(false);
+  const [requestingLink, setRequestingLink] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
   const [letterData, setLetterData] = useState<LetterData | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -157,6 +162,13 @@ function LetterContent() {
       const res = await fetch(`${API_BASE}/letter/${token}`);
       const data = await res.json();
 
+      if (data.expired) {
+        setExpired(true);
+        setEmailHint(data.email_hint || null);
+        setLoading(false);
+        return;
+      }
+
       if (!res.ok || !data.success) {
         throw new Error(data.error || "Letter not found or link has expired");
       }
@@ -166,6 +178,28 @@ function LetterContent() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load letter");
       setLoading(false);
+    }
+  }
+
+  async function handleRequestNewLink() {
+    if (requestingLink) return;
+    setRequestingLink(true);
+    setRequestError(null);
+    try {
+      const res = await fetch(`${API_BASE}/letter/${token}/request-new-link`, { method: "POST" });
+      const data = await res.json();
+      if (res.status === 429) {
+        setRequestError("Please wait a few minutes before requesting again.");
+        return;
+      }
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to send new link");
+      }
+      setNewLinkSent(true);
+    } catch (err) {
+      setRequestError(err instanceof Error ? err.message : "Failed to send new link. Please try again.");
+    } finally {
+      setRequestingLink(false);
     }
   }
 
@@ -223,6 +257,73 @@ function LetterContent() {
         </div>
       </main>
     </>
+    );
+  }
+
+  // Expired state — token valid but past 30-day window
+  if (expired) {
+    return (
+      <>
+      <MinimalHeader />
+      <main className="min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+            {newLinkSent ? (
+              <>
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Check Your Email</h2>
+                <p className="text-gray-600 mb-2">
+                  We&apos;ve sent a new download link to <strong>{emailHint}</strong>.
+                </p>
+                <p className="text-gray-600 mb-6">The link will be active for 30 days.</p>
+                <p className="text-sm text-gray-500">
+                  Didn&apos;t receive it? Check your spam folder or wait a few minutes and try again.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  {Icons.clock}
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Download Link Expired</h2>
+                <p className="text-gray-600 mb-6">
+                  For your security, download links expire after 30 days.
+                  {emailHint && <> We can send a new link to <strong>{emailHint}</strong>.</>}
+                </p>
+                {requestError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                    {requestError}
+                  </div>
+                )}
+                <button
+                  onClick={handleRequestNewLink}
+                  disabled={requestingLink}
+                  className="inline-flex items-center gap-2 bg-[#1a5f7a] hover:bg-[#134a5f] text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
+                >
+                  {requestingLink ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Send New Download Link
+                    </>
+                  )}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </main>
+      </>
     );
   }
 
